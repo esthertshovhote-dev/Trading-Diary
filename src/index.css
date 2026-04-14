@@ -1,0 +1,136 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --font-heading: "Inter", sans-serif;
+    --font-sans: "Inter", sans-serif;
+    --font-mono: "JetBrains Mono", monospace;
+    
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+
+    --color-bento-accent: #2DD4BF;
+    --color-bento-gold: #C5A03E;
+    --color-bento-green: #10B981;
+    --color-bento-red: #F43F5E;
+}
+
+:root {
+    --background: #F8FAFC;
+    --foreground: #0F172A;
+    --card: #FFFFFF;
+    --card-foreground: #0F172A;
+    --popover: #FFFFFF;
+    --popover-foreground: #0F172A;
+    --primary: #0F172A;
+    --primary-foreground: #F8FAFC;
+    --secondary: #F1F5F9;
+    --secondary-foreground: #0F172A;
+    --muted: #F1F5F9;
+    --muted-foreground: #64748B;
+    --accent: #F1F5F9;
+    --accent-foreground: #0F172A;
+    --destructive: #EF4444;
+    --border: #E2E8F0;
+    --input: #E2E8F0;
+    --ring: #0F172A;
+    --radius: 12px;
+}
+
+.dark {
+    --background: #0A0B0E;
+    --foreground: #E2E8F0;
+    --card: #14161C;
+    --card-foreground: #E2E8F0;
+    --popover: #14161C;
+    --popover-foreground: #E2E8F0;
+    --primary: #2DD4BF;
+    --primary-foreground: #0A0B0E;
+    --secondary: #1C1E26;
+    --secondary-foreground: #E2E8F0;
+    --muted: #1C1E26;
+    --muted-foreground: #94A3B8;
+    --accent: #1C1E26;
+    --accent-foreground: #E2E8F0;
+    --destructive: #F43F5E;
+    --border: #242831;
+    --input: #242831;
+    --ring: #2DD4BF;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+.bento-card {
+    @apply bg-card border border-border rounded-[12px] p-3 flex flex-col relative transition-all duration-200 hover:border-bento-accent/30;
+}
+
+.bento-title {
+    @apply text-[11px] uppercase text-muted-foreground font-bold tracking-[0.5px] mb-2.5 flex justify-between items-center;
+}
+
+.bento-price-row {
+    @apply flex justify-between items-center mb-2 font-mono text-[12px];
+}
+
+.bento-table {
+    @apply w-full border-collapse text-[11px] text-left;
+}
+
+.bento-table th {
+    @apply text-muted-foreground pb-2 font-normal;
+}
+
+.bento-table td {
+    @apply py-1.5 border-t border-border;
+}
+

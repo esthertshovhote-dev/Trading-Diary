@@ -1,0 +1,51 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "email": { "type": "string" }
+      },
+      "required": ["uid", "displayName", "email"]
+    },
+    "Trade": {
+      "title": "Trade",
+      "description": "A trading record",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "asset": { "type": "string" },
+        "side": { "type": "string", "enum": ["Buy", "Sell"] },
+        "size": { "type": "string" },
+        "entryPrice": { "type": "number" },
+        "currentPrice": { "type": "number" },
+        "pnl": { "type": "number" },
+        "pnlPercent": { "type": "number" },
+        "sl": { "type": "number" },
+        "tp": { "type": "number" },
+        "status": { "type": "string", "enum": ["Active", "Closed"] },
+        "strategy": { "type": "string" },
+        "setupScore": { "type": "number" },
+        "notes": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "thumbnails": { "type": "array", "items": { "type": "string" } },
+        "annotations": { "type": "object" }
+      },
+      "required": ["uid", "asset", "side", "entryPrice", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents"
+    },
+    "/trades/{tradeId}": {
+      "schema": "Trade",
+      "description": "Trading records collection"
+    }
+  }
+}
