@@ -90,6 +90,7 @@ export default function Dashboard() {
   const [trades, setTrades] = React.useState<Trade[]>(MOCK_TRADES);
   const [editingThumbnail, setEditingThumbnail] = React.useState<{ tradeId: string; index: number } | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [user, setUser] = React.useState<User | null>(null);
 
   useEffect(() => {
@@ -197,14 +198,34 @@ export default function Dashboard() {
   const editingTrade = editingThumbnail ? trades.find(t => t.id === editingThumbnail.tradeId) : null;
 
   return (
-    <div className="flex h-screen w-full bg-background text-foreground overflow-hidden dark">
-      {/* Left Sidebar */}
+    <div className="flex h-screen w-full bg-background text-foreground overflow-hidden dark relative">
+      {/* Mobile Sidebar Overlay */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Sidebar */}
       <motion.aside 
         initial={false}
-        animate={{ width: isSidebarCollapsed ? '64px' : '240px' }}
-        className="flex flex-col border-r border-border bg-card z-20 overflow-hidden relative"
+        animate={{ 
+          width: isSidebarCollapsed ? '64px' : '240px',
+          x: isMobileMenuOpen ? 0 : 0 // x is handled by CSS classes for mobile
+        }}
+        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 lg:relative flex flex-col border-r border-border bg-card overflow-hidden transition-transform duration-300 lg:translate-x-0",
+          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        )}
       >
-        <div className="p-4 mb-2">
+        <div className="p-4 mb-2 flex items-center justify-between">
           <SidebarItem 
             icon={<TrendingUp size={20} />} 
             label="Dashboard" 
@@ -212,6 +233,12 @@ export default function Dashboard() {
             collapsed={isSidebarCollapsed} 
             hasDropdown
           />
+          <button 
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="p-2 hover:bg-muted rounded-lg lg:hidden text-muted-foreground"
+          >
+            <ChevronLeft size={20} />
+          </button>
         </div>
         
         <ScrollArea className="flex-1 px-3">
@@ -259,30 +286,37 @@ export default function Dashboard() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="h-14 border-b border-border bg-card flex items-center justify-between px-5 z-10">
-          <div className="flex items-center gap-4">
-            <h1 className="text-lg font-bold tracking-tighter text-bento-accent flex items-center gap-2">
-              <TrendingUp size={20} strokeWidth={3} /> Trading Diary
+        <header className="h-14 border-b border-border bg-card flex items-center justify-between px-4 lg:px-5 z-10">
+          <div className="flex items-center gap-2 lg:gap-4">
+            <button 
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="p-2 hover:bg-muted rounded-lg lg:hidden text-muted-foreground"
+            >
+              <LayoutGrid size={20} />
+            </button>
+            <h1 className="text-base lg:text-lg font-bold tracking-tighter text-bento-accent flex items-center gap-2">
+              <TrendingUp size={20} strokeWidth={3} className="hidden sm:block" /> 
+              <span className="whitespace-nowrap">Trading Diary</span>
             </h1>
-            <div className="relative ml-8 w-72">
+            <div className="relative ml-2 lg:ml-8 w-40 sm:w-60 lg:w-72 hidden md:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-3.5 h-3.5" />
               <Input 
-                placeholder="Search ticker, strategy or date..." 
+                placeholder="Search..." 
                 className="h-8 pl-9 bg-background border-border text-xs focus-visible:ring-bento-accent/50"
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 lg:gap-4">
             {user && (
-              <Button size="sm" onClick={handleAddTrade} className="h-8 gap-2 bg-bento-accent text-background hover:bg-bento-accent/90">
-                <Plus size={14} /> Add Trade
+              <Button size="sm" onClick={handleAddTrade} className="h-8 px-2 sm:px-3 gap-1 sm:gap-2 bg-bento-accent text-background hover:bg-bento-accent/90">
+                <Plus size={14} /> <span className="hidden xs:block">Add Trade</span>
               </Button>
             )}
             {user ? (
-              <div className="flex items-center gap-3 pr-4 border-r border-border">
-                <div className="text-right">
-                  <p className="text-xs font-medium">{user.displayName}</p>
+              <div className="flex items-center gap-2 lg:gap-3 pr-2 lg:pr-4 border-r border-border">
+                <div className="text-right hidden sm:block">
+                  <p className="text-xs font-medium truncate max-w-[100px]">{user.displayName}</p>
                   <p className="text-[10px] text-muted-foreground">Pro Trader</p>
                 </div>
                 <Avatar className="w-7 h-7 border border-border">
@@ -292,21 +326,21 @@ export default function Dashboard() {
               </div>
             ) : (
               <Button size="sm" variant="outline" onClick={handleLogin} className="h-8 gap-2">
-                <LogIn size={14} /> Sign In
+                <LogIn size={14} /> <span className="hidden sm:block">Sign In</span>
               </Button>
             )}
-            <button className="text-muted-foreground hover:text-foreground transition-colors">
+            <button className="text-muted-foreground hover:text-foreground transition-colors hidden sm:block">
               <Bell size={18} />
             </button>
           </div>
         </header>
 
         {/* Dashboard Grid */}
-        <div className="flex-1 overflow-hidden p-3">
-          <div className="grid grid-cols-[240px_1fr_280px] gap-3 h-full">
+        <div className="flex-1 overflow-y-auto lg:overflow-hidden p-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[240px_1fr_280px] gap-3 h-full auto-rows-max lg:auto-rows-auto">
             
             {/* Column 1: Market Context & Planning */}
-            <div className="flex flex-col gap-3 overflow-hidden">
+            <div className="flex flex-col gap-3">
               {/* Daily Performance */}
               <div className="bento-card h-[240px]">
                 <div className="bento-title">Daily Performance</div>
@@ -359,9 +393,9 @@ export default function Dashboard() {
             </div>
 
             {/* Column 2: Trade Recording and Analysis */}
-            <div className="flex flex-col gap-3 overflow-hidden">
+            <div className="flex flex-col gap-3 md:col-span-2 lg:col-span-1">
               {/* Live Trade Log */}
-              <div className="bento-card h-[200px]">
+              <div className="bento-card min-h-[200px] lg:h-[200px]">
                 <div className="bento-title">Live Trade Log</div>
                 <div className="overflow-auto flex-1">
                   <table className="bento-table">
@@ -401,11 +435,11 @@ export default function Dashboard() {
               </div>
 
               {/* Trade Journal */}
-              <div className="bento-card flex-1">
+              <div className="bento-card flex-1 min-h-[300px]">
                 <div className="bento-title">
                   Trade Journal <span>{currentTrade?.asset || 'No Active Trade'} ({currentTrade?.status || 'N/A'})</span>
                 </div>
-                <div className="grid grid-cols-[100px_1fr] gap-3 h-full">
+                <div className="grid grid-cols-1 sm:grid-cols-[100px_1fr] gap-3 h-full">
                   <div className="flex flex-col gap-3">
                     <div>
                       <div className="text-[10px] opacity-60 uppercase">Strategy</div>
@@ -483,7 +517,7 @@ export default function Dashboard() {
             </div>
 
             {/* Column 3: Performance & Strategy Analytics */}
-            <div className="flex flex-col gap-3 overflow-hidden">
+            <div className="flex flex-col gap-3 md:col-span-2 lg:col-span-1">
               {/* Performance Analytics */}
               <div className="bento-card h-[200px]">
                 <div className="bento-title">Performance Analytics</div>
