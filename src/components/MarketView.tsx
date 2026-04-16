@@ -39,7 +39,7 @@ const DEFAULT_SYMBOLS = [
 
 type TabType = 'watchlist' | 'info' | 'calendar';
 
-export default function MarketView({ onBack }: { onBack: () => void }) {
+export default function MarketView({ onBack, isDarkMode }: { onBack: () => void, isDarkMode?: boolean }) {
   const [activeTab, setActiveTab] = useState<TabType>('watchlist');
   const [quotes, setQuotes] = useState<MarketQuote[]>([]);
   const [calendarEvents, setCalendarEvents] = useState<EconomicEvent[]>([]);
@@ -86,15 +86,21 @@ export default function MarketView({ onBack }: { onBack: () => void }) {
   );
 
   return (
-    <div className="flex flex-col h-screen w-full bg-[#F8FAFC] text-foreground overflow-hidden relative">
+    <div className={cn(
+      "flex flex-col h-screen w-full text-foreground overflow-hidden relative transition-colors duration-300",
+      isDarkMode ? "bg-[#0F172A]" : "bg-[#F8FAFC]"
+    )}>
       {/* Header */}
-      <header className="min-h-[72px] py-2 bg-white flex items-center justify-between px-4 lg:px-8 sticky top-0 z-10 border-b border-border/50">
+      <header className={cn(
+        "min-h-[72px] py-2 flex items-center justify-between px-4 lg:px-8 border-b sticky top-0 z-10 transition-colors duration-300",
+        isDarkMode ? "bg-[#1E293B] border-slate-700" : "bg-white border-border/50"
+      )}>
         <div className="flex items-center gap-3 sm:gap-4">
-          <Button variant="ghost" size="icon" onClick={onBack} className="rounded-full h-10 w-10 shrink-0">
+          <Button variant="ghost" size="icon" onClick={onBack} className={cn("rounded-full h-10 w-10 shrink-0", isDarkMode && "text-slate-400 hover:text-white hover:bg-slate-800")}>
             <ArrowLeft size={20} />
           </Button>
           <div className="flex flex-col overflow-hidden">
-            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-[#0F172A] truncate">Market Hub</h1>
+            <h1 className={cn("text-lg sm:text-xl font-bold tracking-tight truncate", isDarkMode ? "text-white" : "text-[#0F172A]")}>Market Hub</h1>
             <p className="text-[9px] sm:text-[10px] text-muted-foreground uppercase tracking-widest truncate">Real-time Intelligence</p>
           </div>
         </div>
@@ -105,7 +111,10 @@ export default function MarketView({ onBack }: { onBack: () => void }) {
             size="sm" 
             onClick={loadData} 
             disabled={isRefreshing}
-            className="rounded-xl border-border gap-2 h-9 sm:h-10 font-bold text-xs shrink-0"
+            className={cn(
+              "rounded-xl gap-2 h-9 sm:h-10 font-bold text-xs shrink-0 transition-colors",
+              isDarkMode ? "border-slate-700 bg-[#334155] text-white hover:bg-[#475569]" : "border-border"
+            )}
           >
             <RefreshCw size={14} className={cn(isRefreshing && "animate-spin")} />
             <span className="hidden sm:inline">Refresh</span>
@@ -114,7 +123,10 @@ export default function MarketView({ onBack }: { onBack: () => void }) {
       </header>
 
       {/* Tabs Navigation */}
-      <div className="bg-white px-4 lg:px-8 border-b border-border/50">
+      <div className={cn(
+        "px-4 lg:px-8 border-b transition-colors duration-300",
+        isDarkMode ? "bg-[#1E293B] border-slate-700" : "bg-white border-border/50"
+      )}>
         <div className="flex items-center gap-4 sm:gap-8 max-w-6xl mx-auto overflow-x-auto whitespace-nowrap scrollbar-hide">
           {[
             { id: 'watchlist', label: 'Watchlist', icon: <TrendingUp size={16} /> },
@@ -126,7 +138,7 @@ export default function MarketView({ onBack }: { onBack: () => void }) {
               onClick={() => setActiveTab(tab.id as TabType)}
               className={cn(
                 "flex items-center gap-2 py-4 text-sm font-bold transition-all relative",
-                activeTab === tab.id ? "text-[#3B82F6]" : "text-muted-foreground hover:text-[#0F172A]"
+                activeTab === tab.id ? "text-[#3B82F6]" : (isDarkMode ? "text-slate-400 hover:text-white" : "text-muted-foreground hover:text-[#0F172A]")
               )}
             >
               {tab.icon}
@@ -150,40 +162,39 @@ export default function MarketView({ onBack }: { onBack: () => void }) {
             <div className="space-y-6">
               {/* Market Categories */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white border border-border rounded-2xl p-6 shadow-sm flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
-                    <Globe size={24} />
+                {[
+                  { icon: <Globe size={24} />, title: "Stocks", desc: "Global Equity Markets", color: "blue" },
+                  { icon: <Coins size={24} />, title: "Crypto", desc: "Digital Asset Prices", color: "orange" },
+                  { icon: <BarChart3 size={24} />, title: "Forex", desc: "Currency Exchange Rates", color: "green" }
+                ].map((cat, i) => (
+                  <div key={i} className={cn(
+                    "rounded-2xl p-6 shadow-sm flex items-center gap-4 transition-all border duration-300",
+                    isDarkMode ? "bg-[#1E293B] border-slate-700" : "bg-white border-border"
+                  )}>
+                    <div className={cn(
+                      "w-12 h-12 rounded-xl flex items-center justify-center",
+                      cat.color === "blue" ? (isDarkMode ? "bg-blue-500/10 text-blue-400" : "bg-blue-50 text-blue-600") :
+                      cat.color === "orange" ? (isDarkMode ? "bg-orange-500/10 text-orange-400" : "bg-orange-50 text-orange-600") :
+                      (isDarkMode ? "bg-green-500/10 text-green-400" : "bg-green-50 text-green-600")
+                    )}>
+                      {cat.icon}
+                    </div>
+                    <div>
+                      <h3 className={cn("font-bold", isDarkMode ? "text-white" : "text-[#0F172A]")}>{cat.title}</h3>
+                      <p className="text-xs text-muted-foreground">{cat.desc}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-[#0F172A]">Stocks</h3>
-                    <p className="text-xs text-muted-foreground">Global Equity Markets</p>
-                  </div>
-                </div>
-                <div className="bg-white border border-border rounded-2xl p-6 shadow-sm flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600">
-                    <Coins size={24} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-[#0F172A]">Crypto</h3>
-                    <p className="text-xs text-muted-foreground">Digital Asset Prices</p>
-                  </div>
-                </div>
-                <div className="bg-white border border-border rounded-2xl p-6 shadow-sm flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center text-green-600">
-                    <BarChart3 size={24} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-[#0F172A]">Forex</h3>
-                    <p className="text-xs text-muted-foreground">Currency Exchange Rates</p>
-                  </div>
-                </div>
+                ))}
               </div>
 
               {/* Quotes Table */}
-              <div className="bg-white border border-border rounded-2xl shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-border flex items-center justify-between">
-                  <h2 className="font-bold text-[#0F172A]">Live Watchlist</h2>
-                  <Badge variant="outline" className="border-border text-muted-foreground font-bold">
+              <div className={cn(
+                "rounded-2xl shadow-sm overflow-hidden transition-all border duration-300",
+                isDarkMode ? "bg-[#1E293B] border-slate-700" : "bg-white border-border"
+              )}>
+                <div className={cn("p-6 border-b flex items-center justify-between", isDarkMode ? "border-slate-700" : "border-border")}>
+                  <h2 className={cn("font-bold", isDarkMode ? "text-white" : "text-[#0F172A]")}>Live Watchlist</h2>
+                  <Badge variant="outline" className={cn("border-border text-muted-foreground font-bold", isDarkMode && "border-slate-700")}>
                     {filteredQuotes.length} Active Quotes
                   </Badge>
                 </div>
@@ -191,7 +202,7 @@ export default function MarketView({ onBack }: { onBack: () => void }) {
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-[#F8FAFC] border-b border-border">
+                      <tr className={cn("border-b transition-colors", isDarkMode ? "bg-[#0F172A] border-slate-700" : "bg-[#F8FAFC] border-border")}>
                         <th className="px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-wider">Symbol</th>
                         <th className="px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-wider">Price</th>
                         <th className="px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-wider">Change</th>
@@ -199,7 +210,7 @@ export default function MarketView({ onBack }: { onBack: () => void }) {
                         <th className="px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-wider">Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-border">
+                    <tbody className={cn("divide-y transition-colors", isDarkMode ? "divide-slate-700" : "divide-border")}>
                       {loading && quotes.length === 0 ? (
                         <tr>
                           <td colSpan={5} className="px-6 py-12 text-center">
@@ -213,27 +224,32 @@ export default function MarketView({ onBack }: { onBack: () => void }) {
                         filteredQuotes.map((quote) => {
                           const isPositive = parseFloat(quote.change) >= 0;
                           return (
-                            <tr key={quote.symbol} className="hover:bg-[#F8FAFC] transition-colors group">
+                            <tr key={quote.symbol} className={cn("transition-colors group", isDarkMode ? "hover:bg-slate-800" : "hover:bg-[#F8FAFC]")}>
                               <td className="px-6 py-4">
                                 <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 rounded-lg bg-[#F8FAFC] border border-border flex items-center justify-center font-black text-[10px] text-[#0F172A]">
+                                  <div className={cn(
+                                    "w-8 h-8 rounded-lg flex items-center justify-center font-black text-[10px] transition-colors border",
+                                    isDarkMode ? "bg-[#0F172A] border-slate-700 text-white" : "bg-[#F8FAFC] border-border text-[#0F172A]"
+                                  )}>
                                     {quote.symbol.substring(0, 2)}
                                   </div>
-                                  <span className="font-bold text-[#0F172A]">{quote.symbol}</span>
+                                  <span className={cn("font-bold", isDarkMode ? "text-slate-200" : "text-[#0F172A]")}>{quote.symbol}</span>
                                 </div>
                               </td>
                               <td className="px-6 py-4">
-                                <span className="font-mono font-bold text-[#0F172A]">
+                                <span className={cn("font-mono font-bold", isDarkMode ? "text-slate-300" : "text-[#0F172A]")}>
                                   ${parseFloat(quote.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
                                 </span>
                               </td>
-                              <td className={cn("px-6 py-4 font-bold", isPositive ? "text-[#10B981]" : "text-[#EF4444]")}>
+                              <td className={cn("px-6 py-4 font-bold", isPositive ? (isDarkMode ? "text-green-400" : "text-[#10B981]") : (isDarkMode ? "text-red-400" : "text-[#EF4444]"))}>
                                 {isPositive ? '+' : ''}{parseFloat(quote.change).toFixed(2)}
                               </td>
                               <td className="px-6 py-4">
                                 <Badge className={cn(
                                   "border-none font-black text-[10px] h-6 px-2",
-                                  isPositive ? "bg-[#10B981]/10 text-[#10B981]" : "bg-[#EF4444]/10 text-[#EF4444]"
+                                  isPositive ? 
+                                    (isDarkMode ? "bg-green-500/10 text-green-400" : "bg-[#10B981]/10 text-[#10B981]") : 
+                                    (isDarkMode ? "bg-red-500/10 text-red-400" : "bg-[#EF4444]/10 text-[#EF4444]")
                                 )}>
                                   {isPositive ? '+' : ''}{quote.changePercent}
                                 </Badge>
@@ -241,9 +257,9 @@ export default function MarketView({ onBack }: { onBack: () => void }) {
                               <td className="px-6 py-4">
                                 <div className="flex items-center gap-2">
                                   {isPositive ? (
-                                    <TrendingUp size={16} className="text-[#10B981]" />
+                                    <TrendingUp size={16} className={cn(isDarkMode ? "text-green-400" : "text-[#10B981]")} />
                                   ) : (
-                                    <TrendingDown size={16} className="text-[#EF4444]" />
+                                    <TrendingDown size={16} className={cn(isDarkMode ? "text-red-400" : "text-[#EF4444]")} />
                                   )}
                                   <span className="text-xs text-muted-foreground font-medium">Live</span>
                                 </div>
@@ -262,27 +278,36 @@ export default function MarketView({ onBack }: { onBack: () => void }) {
           {activeTab === 'info' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {Object.entries(INSTRUMENT_METADATA).map(([symbol, info]) => (
-                <div key={symbol} className="bg-white border border-border rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow group">
+                <div key={symbol} className={cn(
+                  "rounded-2xl p-6 shadow-sm hover:shadow-md transition-all border group duration-300",
+                  isDarkMode ? "bg-[#1E293B] border-slate-700" : "bg-white border-border"
+                )}>
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-[#F8FAFC] border border-border flex items-center justify-center font-black text-lg text-[#0F172A]">
+                      <div className={cn(
+                        "w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg transition-colors border",
+                        isDarkMode ? "bg-[#0F172A] border-slate-700 text-white" : "bg-[#F8FAFC] border-border text-[#0F172A]"
+                      )}>
                         {symbol.substring(0, 2)}
                       </div>
                       <div>
-                        <h3 className="font-bold text-[#0F172A]">{info.name}</h3>
-                        <Badge variant="secondary" className="bg-[#F8FAFC] text-muted-foreground font-bold text-[10px]">
+                        <h3 className={cn("font-bold", isDarkMode ? "text-white" : "text-[#0F172A]")}>{info.name}</h3>
+                        <Badge variant="secondary" className={cn(
+                          "font-bold text-[10px]",
+                          isDarkMode ? "bg-[#0F172A] text-slate-400" : "bg-[#F8FAFC] text-muted-foreground"
+                        )}>
                           {info.category}
                         </Badge>
                       </div>
                     </div>
-                    <Button variant="ghost" size="icon" className="rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="icon" className={cn("rounded-full opacity-0 group-hover:opacity-100 transition-opacity", isDarkMode && "hover:bg-slate-800")}>
                       <PlusCircle size={20} className="text-[#3B82F6]" />
                     </Button>
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     {info.description}
                   </p>
-                  <div className="mt-6 pt-6 border-t border-border flex items-center justify-between">
+                  <div className={cn("mt-6 pt-6 border-t flex items-center justify-between", isDarkMode ? "border-slate-700" : "border-border")}>
                     <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">Symbol: {symbol}</span>
                     <button className="text-xs font-bold text-[#3B82F6] flex items-center gap-1 hover:underline">
                       Full Analysis <ChevronRight size={14} />
@@ -294,13 +319,19 @@ export default function MarketView({ onBack }: { onBack: () => void }) {
           )}
 
           {activeTab === 'calendar' && (
-            <div className="bg-white border border-border rounded-2xl shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-border flex items-center justify-between">
+            <div className={cn(
+              "rounded-2xl shadow-sm overflow-hidden transition-all border duration-300",
+              isDarkMode ? "bg-[#1E293B] border-slate-700" : "bg-white border-border"
+            )}>
+              <div className={cn("p-6 border-b flex items-center justify-between", isDarkMode ? "border-slate-700" : "border-border")}>
                 <div>
-                  <h2 className="font-bold text-[#0F172A]">Economic Calendar</h2>
+                  <h2 className={cn("font-bold", isDarkMode ? "text-white" : "text-[#0F172A]")}>Economic Calendar</h2>
                   <p className="text-xs text-muted-foreground">Upcoming global economic events and indicators</p>
                 </div>
-                <Badge className="bg-blue-50 text-blue-600 border-blue-100 font-bold">
+                <Badge className={cn(
+                  "font-bold transition-colors",
+                  isDarkMode ? "bg-blue-500/10 text-blue-400" : "bg-blue-50 text-blue-600 border-blue-100"
+                )}>
                   {calendarEvents.length} Events
                 </Badge>
               </div>
@@ -308,14 +339,14 @@ export default function MarketView({ onBack }: { onBack: () => void }) {
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-[#F8FAFC] border-b border-border">
+                    <tr className={cn("border-b transition-colors", isDarkMode ? "bg-[#0F172A] border-slate-700" : "bg-[#F8FAFC] border-border")}>
                       <th className="px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-wider">Date & Time</th>
                       <th className="px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-wider">Event</th>
                       <th className="px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-wider">Country</th>
                       <th className="px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-wider">Impact</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-border">
+                  <tbody className={cn("divide-y transition-colors", isDarkMode ? "divide-slate-700" : "divide-border")}>
                     {loading && calendarEvents.length === 0 ? (
                       <tr>
                         <td colSpan={4} className="px-6 py-12 text-center">
@@ -327,32 +358,35 @@ export default function MarketView({ onBack }: { onBack: () => void }) {
                       </tr>
                     ) : (
                       calendarEvents.map((event, idx) => (
-                        <tr key={idx} className="hover:bg-[#F8FAFC] transition-colors">
+                        <tr key={idx} className={cn("transition-colors", isDarkMode ? "hover:bg-slate-800" : "hover:bg-[#F8FAFC]")}>
                           <td className="px-6 py-4">
                             <div className="flex flex-col">
-                              <span className="text-sm font-bold text-[#0F172A]">{event.date}</span>
+                              <span className={cn("text-sm font-bold", isDarkMode ? "text-white" : "text-[#0F172A]")}>{event.date}</span>
                               <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                                 <Clock size={10} /> {event.time || 'All Day'}
                               </span>
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <span className="text-sm font-medium text-[#0F172A]">{event.event}</span>
+                            <span className={cn("text-sm font-medium", isDarkMode ? "text-slate-200" : "text-[#0F172A]")}>{event.event}</span>
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
-                              <div className="w-6 h-4 bg-[#F8FAFC] border border-border rounded-sm flex items-center justify-center text-[8px] font-bold">
+                              <div className={cn(
+                                "w-6 h-4 border rounded-sm flex items-center justify-center text-[8px] font-bold transition-colors",
+                                isDarkMode ? "bg-[#0F172A] border-slate-700" : "bg-[#F8FAFC] border-border"
+                              )}>
                                 {event.country}
                               </div>
-                              <span className="text-xs font-medium">{event.country}</span>
+                              <span className={cn("text-xs font-medium", isDarkMode ? "text-slate-400" : "text-muted-foreground")}>{event.country}</span>
                             </div>
                           </td>
                           <td className="px-6 py-4">
                             <Badge className={cn(
                               "border-none font-black text-[10px] h-6 px-2",
-                              event.impact === 'High' ? "bg-red-50 text-red-600" :
-                              event.impact === 'Medium' ? "bg-orange-50 text-orange-600" :
-                              "bg-green-50 text-green-600"
+                              event.impact === 'High' ? (isDarkMode ? "bg-red-500/20 text-red-400" : "bg-red-50 text-red-600") :
+                              event.impact === 'Medium' ? (isDarkMode ? "bg-orange-500/20 text-orange-400" : "bg-orange-50 text-orange-600") :
+                              (isDarkMode ? "bg-green-500/20 text-green-400" : "bg-green-50 text-green-600")
                             )}>
                               {event.impact}
                             </Badge>
@@ -367,13 +401,19 @@ export default function MarketView({ onBack }: { onBack: () => void }) {
           )}
 
           {/* Rate Limit Info */}
-          <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 flex items-start gap-4">
-            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+          <div className={cn(
+            "rounded-2xl p-6 flex items-start gap-4 border transition-all duration-300",
+            isDarkMode ? "bg-blue-500/10 border-blue-500/20" : "bg-blue-50 border-blue-100"
+          )}>
+            <div className={cn(
+              "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
+              isDarkMode ? "bg-blue-500/20 text-blue-400" : "bg-blue-100 text-blue-600"
+            )}>
               <AlertCircle size={20} />
             </div>
             <div className="space-y-1">
-              <h4 className="font-bold text-blue-900">Data Source Information</h4>
-              <p className="text-sm text-blue-700">
+              <h4 className={cn("font-bold", isDarkMode ? "text-blue-400" : "text-blue-900")}>Data Source Information</h4>
+              <p className={cn("text-sm", isDarkMode ? "text-blue-300/80" : "text-blue-700")}>
                 Market data and economic calendar are powered by Alpha Vantage. 
                 Free tier accounts are limited to 5 requests per minute. 
                 If data fails to load, please wait 60 seconds and refresh.

@@ -141,6 +141,7 @@ export default function Dashboard() {
   const [isDarkMode, setIsDarkMode] = React.useState(false);
   const [timeFormat, setTimeFormat] = React.useState<'HH:mm:ss a' | 'HH:mm' | 'MMM dd, HH:mm'>('HH:mm:ss a');
   const [isQuickTradeOpen, setIsQuickTradeOpen] = React.useState(false);
+  const [dashboardTab, setDashboardTab] = React.useState<'overview' | 'calendar'>('overview');
 
   const metrics = React.useMemo(() => {
     const closedTrades = trades.filter(t => t.status === 'Closed');
@@ -546,9 +547,10 @@ export default function Dashboard() {
             trades={trades} 
             onBack={() => setView('dashboard')} 
             onEditTrade={handleEditTrade}
+            isDarkMode={isDarkMode}
           />
         ) : view === 'trade-analysis' ? (
-          <TradeAnalysisView trades={trades} onBack={() => setView('dashboard')} />
+          <TradeAnalysisView trades={trades} onBack={() => setView('dashboard')} isDarkMode={isDarkMode} />
         ) : view === 'daily-journal' ? (
           <DailyJournalView 
             onBack={() => setView('dashboard')} 
@@ -556,25 +558,27 @@ export default function Dashboard() {
             pulses={pulses}
             onAddEntry={(entry) => setJournalEntries(prev => [entry, ...prev])}
             onAddPulse={(pulse) => setPulses(prev => [pulse, ...prev])}
+            isDarkMode={isDarkMode}
           />
         ) : view === 'trade-journal' ? (
           <TradeJournalView 
             trades={trades} 
             onBack={() => setView('dashboard')} 
             onSave={handleSaveJournal}
+            isDarkMode={isDarkMode}
           />
         ) : view === 'market' ? (
-          <MarketView onBack={() => setView('dashboard')} />
+          <MarketView onBack={() => setView('dashboard')} isDarkMode={isDarkMode} />
         ) : view === 'performance' ? (
-          <PerformanceView trades={trades} onBack={() => setView('dashboard')} />
+          <PerformanceView trades={trades} onBack={() => setView('dashboard')} isDarkMode={isDarkMode} />
         ) : view === 'settings' ? (
-          <SettingsView onBack={() => setView('dashboard')} />
+          <SettingsView onBack={() => setView('dashboard')} isDarkMode={isDarkMode} />
         ) : view === 'risk-calculator' ? (
-          <RiskCalculator onBack={() => setView('dashboard')} />
+          <RiskCalculator onBack={() => setView('dashboard')} isDarkMode={isDarkMode} />
         ) : view === 'ai-agent' ? (
-          <AIAgentView trades={trades} onBack={() => setView('dashboard')} />
+          <AIAgentView trades={trades} onBack={() => setView('dashboard')} isDarkMode={isDarkMode} />
         ) : view === 'strategies' ? (
-          <StrategyView trades={trades} onBack={() => setView('dashboard')} />
+          <StrategyView trades={trades} onBack={() => setView('dashboard')} isDarkMode={isDarkMode} />
         ) : (
           <>
             <QuickTradeModal 
@@ -654,11 +658,41 @@ export default function Dashboard() {
             </header>
 
         {/* Dashboard Grid */}
-        <div className="flex-1 overflow-y-auto p-8 bg-[#F8FAFC]">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-[#F8FAFC]">
           <div className="max-w-[1600px] mx-auto space-y-6">
             
-            {/* Metric Cards Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Dashboard Tabs Toggle */}
+            <div className="flex justify-start">
+              <div className="inline-flex p-1 bg-[#F1F5F9] rounded-2xl border border-slate-200 shadow-sm">
+                <button
+                  onClick={() => setDashboardTab('overview')}
+                  className={cn(
+                    "px-10 py-2 rounded-xl text-sm font-bold transition-all duration-300",
+                    dashboardTab === 'overview' 
+                      ? "bg-white text-[#0F172A] shadow-sm ring-1 ring-slate-200" 
+                      : "text-slate-500 hover:text-slate-900"
+                  )}
+                >
+                  Overview
+                </button>
+                <button
+                  onClick={() => setDashboardTab('calendar')}
+                  className={cn(
+                    "px-10 py-2 rounded-xl text-sm font-bold transition-all duration-300",
+                    dashboardTab === 'calendar' 
+                      ? "bg-white text-[#0F172A] shadow-sm ring-1 ring-slate-200" 
+                      : "text-slate-500 hover:text-slate-900"
+                  )}
+                >
+                  Calendar
+                </button>
+              </div>
+            </div>
+
+            {dashboardTab === 'overview' ? (
+              <>
+                {/* Metric Cards Row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <MetricCard 
                 title="TOTAL P&L" 
                 value={`${metrics.totalPnl >= 0 ? '+' : ''}$${metrics.totalPnl.toLocaleString()}`} 
@@ -831,8 +865,12 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </>
+        ) : (
+          <TradingCalendar trades={trades} />
+        )}
+      </div>
+    </div>
 
         {/* Floating Chat Button */}
         <button className="fixed bottom-20 right-6 w-14 h-14 bg-[#0077B6] rounded-full shadow-2xl flex items-center justify-center text-white hover:scale-110 transition-transform z-50">
@@ -847,36 +885,154 @@ export default function Dashboard() {
 );
 }
 
+function TradingCalendar({ trades }: { trades: Trade[] }) {
+  const [currentMonth, setCurrentMonth] = React.useState(new Date());
+  
+  const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
+  const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
+  const monthName = format(currentMonth, 'MMMM yyyy');
+
+  const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
+  const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
+
+  // Calculate daily P&L
+  const dailyPnl = React.useMemo(() => {
+    const pnlMap: Record<string, number> = {};
+    trades.forEach(t => {
+      const dateKey = format(new Date(t.timestamp), 'yyyy-MM-dd');
+      pnlMap[dateKey] = (pnlMap[dateKey] || 0) + (t.pnl || 0);
+    });
+    return pnlMap;
+  }, [trades]);
+
+  return (
+    <div className="bg-white border border-border rounded-2xl p-6 shadow-sm">
+      <div className="flex items-center justify-between mb-8">
+        <h3 className="text-xl font-black text-[#0F172A]">{monthName}</h3>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={prevMonth} className="h-9 w-9 rounded-xl">
+            <ChevronLeft size={18} />
+          </Button>
+          <Button variant="outline" size="icon" onClick={nextMonth} className="h-9 w-9 rounded-xl">
+            <ChevronRight size={18} />
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-7 gap-px bg-border border border-border rounded-xl overflow-hidden">
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+          <div key={day} className="bg-[#F8FAFC] py-3 text-center text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+            {day}
+          </div>
+        ))}
+        
+        {Array.from({ length: firstDayOfMonth }).map((_, i) => (
+          <div key={`empty-${i}`} className="bg-white min-h-[120px] p-2" />
+        ))}
+
+        {Array.from({ length: daysInMonth }).map((_, i) => {
+          const day = i + 1;
+          const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+          const dateKey = format(date, 'yyyy-MM-dd');
+          const pnl = dailyPnl[dateKey];
+          const isToday = format(new Date(), 'yyyy-MM-dd') === dateKey;
+
+          return (
+            <div key={day} className={cn(
+              "bg-white min-h-[120px] p-2 border-t border-l border-border transition-colors hover:bg-[#F8FAFC] flex flex-col",
+              isToday && "bg-blue-50/30"
+            )}>
+              <div className="flex items-center justify-between mb-2">
+                <span className={cn(
+                  "text-xs font-bold",
+                  isToday ? "text-[#3B82F6] w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center" : "text-[#0F172A]"
+                )}>
+                  {day}
+                </span>
+              </div>
+              {pnl !== undefined && (
+                <div className={cn(
+                  "mt-auto p-2 rounded-lg text-center",
+                  pnl >= 0 ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
+                )}>
+                  <p className="text-[10px] font-black leading-none mb-1">
+                    {pnl >= 0 ? 'PROFIT' : 'LOSS'}
+                  </p>
+                  <p className="text-xs font-bold">
+                    {pnl >= 0 ? '+' : ''}${Math.abs(pnl).toLocaleString()}
+                  </p>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div className="bg-[#F8FAFC] border border-border rounded-xl p-4">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">MONTHLY P&L</p>
+          <p className={cn(
+            "text-xl font-black",
+            Object.values(dailyPnl).reduce((a, b) => a + b, 0) >= 0 ? "text-emerald-600" : "text-rose-600"
+          )}>
+            {Object.values(dailyPnl).reduce((a, b) => a + b, 0) >= 0 ? '+' : '-'}${Math.abs(Object.values(dailyPnl).reduce((a, b) => a + b, 0)).toLocaleString()}
+          </p>
+        </div>
+        <div className="bg-[#F8FAFC] border border-border rounded-xl p-4">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">WINNING DAYS</p>
+          <p className="text-xl font-black text-[#0F172A]">
+            {Object.values(dailyPnl).filter(v => v > 0).length}
+          </p>
+        </div>
+        <div className="bg-[#F8FAFC] border border-border rounded-xl p-4">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">LOSING DAYS</p>
+          <p className="text-xl font-black text-[#0F172A]">
+            {Object.values(dailyPnl).filter(v => v < 0).length}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DailyJournalView({ 
   onBack, 
   entries, 
   pulses, 
   onAddEntry, 
-  onAddPulse 
+  onAddPulse,
+  isDarkMode
 }: { 
   onBack: () => void,
   entries: any[],
   pulses: any[],
   onAddEntry: (entry: any) => void,
-  onAddPulse: (pulse: any) => void
+  onAddPulse: (pulse: any) => void,
+  isDarkMode?: boolean
 }) {
   const [filter, setFilter] = React.useState<'all' | 'free' | 'structured'>('all');
   const [isAddingPulse, setIsAddingPulse] = React.useState(false);
   const [pulseNote, setPulseNote] = React.useState('');
 
   return (
-    <div className="flex flex-col h-screen w-full bg-[#F8FAFC] text-foreground overflow-hidden relative">
-      <header className="h-[72px] bg-white flex items-center justify-between px-8 border-b border-border/50 sticky top-0 z-10">
+    <div className={cn(
+      "flex flex-col h-screen w-full overflow-hidden relative transition-colors duration-300",
+      isDarkMode ? "bg-[#0F172A] text-slate-200" : "bg-[#F8FAFC] text-foreground"
+    )}>
+      <header className={cn(
+        "h-[72px] flex items-center justify-between px-8 border-b sticky top-0 z-10 transition-colors duration-300",
+        isDarkMode ? "bg-[#1E293B] border-slate-700/50" : "bg-white border-border/50"
+      )}>
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={onBack} className="rounded-full">
+          <Button variant="ghost" size="icon" onClick={onBack} className={cn("rounded-full", isDarkMode ? "text-slate-400 hover:text-white" : "")}>
             <ArrowLeft size={20} />
           </Button>
-          <h2 className="text-xl font-bold text-[#0F172A]">Daily Journal</h2>
+          <h2 className={cn("text-xl font-bold", isDarkMode ? "text-white" : "text-[#0F172A]")}>Daily Journal</h2>
         </div>
         <div className="flex items-center gap-4">
           <Button 
             onClick={() => onAddEntry({ id: Date.now().toString(), date: new Date().toISOString(), content: 'New entry...', type: 'free' })}
-            className="bg-[#3B82F6] hover:bg-[#2563EB] rounded-xl gap-2"
+            className="bg-[#3B82F6] hover:bg-[#2563EB] rounded-xl gap-2 shadow-lg shadow-blue-500/20"
           >
             <Plus size={18} />
             Add Entry
@@ -889,29 +1045,46 @@ function DailyJournalView({
         <div className="max-w-5xl mx-auto space-y-6 lg:y-8">
           
           {/* Today's Pulses Section */}
-          <div className="bg-white border border-border rounded-2xl p-8 space-y-8 min-h-[280px] flex flex-col shadow-sm">
+          <div className={cn(
+            "border rounded-2xl p-8 space-y-8 min-h-[280px] flex flex-col shadow-sm transition-colors duration-300",
+            isDarkMode ? "bg-[#1E293B] border-slate-700/50" : "bg-white border-border"
+          )}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] flex items-center justify-center text-[#3B82F6]">
+                <div className={cn(
+                  "w-10 h-10 rounded-xl flex items-center justify-center",
+                  isDarkMode ? "bg-blue-500/10 text-blue-400" : "bg-[#EFF6FF] text-[#3B82F6]"
+                )}>
                   <Zap size={20} fill="currentColor" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-[#0F172A]">Today's Pulses</h3>
-                  <p className="text-xs text-muted-foreground">Quick snapshots of your trading state</p>
+                  <h3 className={cn("font-bold", isDarkMode ? "text-white" : "text-[#0F172A]")}>Today's Pulses</h3>
+                  <p className="text-xs text-muted-foreground/80">Quick snapshots of your trading state</p>
                 </div>
               </div>
-              <button className="h-9 px-4 rounded-lg border border-border text-xs font-bold text-[#3B82F6] hover:bg-[#F8FAFC] transition-colors flex items-center gap-2">
+              <button className={cn(
+                "h-9 px-4 rounded-lg border text-xs font-bold transition-colors flex items-center gap-2",
+                isDarkMode 
+                  ? "border-slate-700 text-blue-400 hover:bg-slate-800" 
+                  : "border-border text-[#3B82F6] hover:bg-[#F8FAFC]"
+              )}>
                 <Plus size={14} /> Add Pulse
               </button>
             </div>
             
             <div className="flex-1 flex flex-col items-center justify-center text-center space-y-4">
-              <div className="w-16 h-16 bg-[#F8FAFC] rounded-full flex items-center justify-center border border-border">
+              <div className={cn(
+                "w-16 h-16 rounded-full flex items-center justify-center border",
+                isDarkMode ? "bg-[#334155] border-slate-700" : "bg-[#F8FAFC] border-border"
+              )}>
                 <Zap size={32} className="text-muted-foreground opacity-20" />
               </div>
               <div className="space-y-1">
-                <p className="text-sm font-bold text-[#0F172A]">No pulses recorded today</p>
-                <p className="text-xs text-muted-foreground">Press <kbd className="px-1.5 py-0.5 rounded bg-[#F8FAFC] border border-border text-[10px] font-mono font-bold">P</kbd> to add one</p>
+                <p className={cn("text-sm font-bold", isDarkMode ? "text-slate-300" : "text-[#0F172A]")}>No pulses recorded today</p>
+                <p className="text-xs text-muted-foreground">Press <kbd className={cn(
+                  "px-1.5 py-0.5 rounded border text-[10px] font-mono font-bold",
+                  isDarkMode ? "bg-[#334155] border-slate-700 text-slate-400" : "bg-[#F8FAFC] border-border"
+                )}>P</kbd> to add one</p>
               </div>
             </div>
           </div>
@@ -921,32 +1094,46 @@ function DailyJournalView({
             {/* This Week */}
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-full bg-white border border-border flex items-center justify-center">
+                <div className={cn(
+                  "w-6 h-6 rounded-full border flex items-center justify-center",
+                  isDarkMode ? "bg-[#1E293B] border-slate-700" : "bg-white border-border"
+                )}>
                   <ChevronDown size={14} className="text-muted-foreground" />
                 </div>
                 <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">THIS WEEK</h4>
-                <Badge className="bg-[#F8FAFC] text-muted-foreground border border-border text-[10px] h-5 px-2 font-bold">2 ENTRIES</Badge>
-                <div className="h-px flex-1 bg-border/50" />
+                <Badge className={cn(
+                  "border text-[10px] h-5 px-2 font-bold",
+                  isDarkMode ? "bg-[#334155] text-slate-400 border-slate-700" : "bg-[#F8FAFC] text-muted-foreground border-border"
+                )}>2 ENTRIES</Badge>
+                <div className={cn("h-px flex-1", isDarkMode ? "bg-slate-800" : "bg-border/50")} />
               </div>
               
               <div className="space-y-3">
                 {/* Entry 1 */}
-                <div className="bg-white border border-border rounded-2xl p-5 flex items-center justify-between group hover:border-[#3B82F6]/30 transition-all cursor-pointer shadow-sm">
+                <div className={cn(
+                  "border rounded-2xl p-5 flex items-center justify-between group transition-all cursor-pointer shadow-sm",
+                  isDarkMode 
+                    ? "bg-[#1E293B] border-slate-700/50 hover:border-blue-500/50" 
+                    : "bg-white border-border hover:border-[#3B82F6]/30"
+                )}>
                   <div className="flex items-center gap-5">
-                    <div className="w-10 h-10 rounded-xl bg-[#F8FAFC] border border-border flex flex-col items-center justify-center">
+                    <div className={cn(
+                      "w-10 h-10 rounded-xl border flex flex-col items-center justify-center",
+                      isDarkMode ? "bg-[#334155] border-slate-700" : "bg-[#F8FAFC] border-border"
+                    )}>
                       <span className="text-[10px] font-bold text-muted-foreground leading-none">APR</span>
-                      <span className="text-sm font-black text-[#0F172A] leading-none mt-1">15</span>
+                      <span className={cn("text-sm font-black leading-none mt-1", isDarkMode ? "text-white" : "text-[#0F172A]")}>15</span>
                     </div>
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-3">
-                        <span className="font-bold text-[#0F172A]">Wednesday, April 15</span>
+                        <span className={cn("font-bold", isDarkMode ? "text-white" : "text-[#0F172A]")}>Wednesday, April 15</span>
                         <Badge className="bg-[#10B981]/10 text-[#10B981] border-none text-[9px] h-4 px-1.5 font-black">TODAY</Badge>
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
                           <PenLine size={12} /> Free Write
                         </div>
-                        <div className="w-1 h-1 rounded-full bg-muted" />
+                        <div className="w-1 h-1 rounded-full bg-muted/30" />
                         <span className="text-xs text-muted-foreground font-medium italic">"Focused on high probability setups..."</span>
                       </div>
                     </div>
@@ -955,21 +1142,29 @@ function DailyJournalView({
                 </div>
                 
                 {/* Entry 2 */}
-                <div className="bg-white border border-border rounded-2xl p-5 flex items-center justify-between group hover:border-[#3B82F6]/30 transition-all cursor-pointer shadow-sm">
+                <div className={cn(
+                  "border rounded-2xl p-5 flex items-center justify-between group transition-all cursor-pointer shadow-sm",
+                  isDarkMode 
+                    ? "bg-[#1E293B] border-slate-700/50 hover:border-blue-500/50" 
+                    : "bg-white border-border hover:border-[#3B82F6]/30"
+                )}>
                   <div className="flex items-center gap-5">
-                    <div className="w-10 h-10 rounded-xl bg-[#F8FAFC] border border-border flex flex-col items-center justify-center">
+                    <div className={cn(
+                      "w-10 h-10 rounded-xl border flex flex-col items-center justify-center",
+                      isDarkMode ? "bg-[#334155] border-slate-700" : "bg-[#F8FAFC] border-border"
+                    )}>
                       <span className="text-[10px] font-bold text-muted-foreground leading-none">APR</span>
-                      <span className="text-sm font-black text-[#0F172A] leading-none mt-1">14</span>
+                      <span className={cn("text-sm font-black leading-none mt-1", isDarkMode ? "text-white" : "text-[#0F172A]")}>14</span>
                     </div>
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-3">
-                        <span className="font-bold text-[#0F172A]">Tuesday, April 14</span>
+                        <span className={cn("font-bold", isDarkMode ? "text-white" : "text-[#0F172A]")}>Tuesday, April 14</span>
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
                           <PenLine size={12} /> Free Write
                         </div>
-                        <div className="w-1 h-1 rounded-full bg-muted" />
+                        <div className="w-1 h-1 rounded-full bg-muted/30" />
                         <div className="flex items-center gap-1.5 text-xs text-[#10B981] font-bold">
                           <TrendingUp size={12} /> 1 trade
                         </div>
@@ -984,12 +1179,18 @@ function DailyJournalView({
             {/* Earlier */}
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-full bg-white border border-border flex items-center justify-center">
+                <div className={cn(
+                  "w-6 h-6 rounded-full border flex items-center justify-center",
+                  isDarkMode ? "bg-[#1E293B] border-slate-700" : "bg-white border-border"
+                )}>
                   <ChevronRight size={14} className="text-muted-foreground" />
                 </div>
                 <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">EARLIER</h4>
-                <Badge className="bg-[#F8FAFC] text-muted-foreground border border-border text-[10px] h-5 px-2 font-bold">1 ENTRY</Badge>
-                <div className="h-px flex-1 bg-border/50" />
+                <Badge className={cn(
+                  "border text-[10px] h-5 px-2 font-bold",
+                  isDarkMode ? "bg-[#334155] text-slate-400 border-slate-700" : "bg-[#F8FAFC] text-muted-foreground border-border"
+                )}>1 ENTRY</Badge>
+                <div className={cn("h-px flex-1", isDarkMode ? "bg-slate-800" : "bg-border/50")} />
               </div>
             </div>
           </div>
@@ -1002,9 +1203,15 @@ function DailyJournalView({
       </button>
 
       {/* Check-In Tab */}
-      <div className="fixed right-0 top-1/2 -translate-y-1/2 bg-white border border-border border-r-0 rounded-l-xl p-2 cursor-pointer hover:bg-[#F8FAFC] transition-colors z-40 group shadow-sm">
+      <div className={cn(
+        "fixed right-0 top-1/2 -translate-y-1/2 border border-r-0 rounded-l-xl p-2 cursor-pointer transition-colors z-40 group shadow-sm",
+        isDarkMode ? "bg-[#1E293B] border-slate-700 hover:bg-[#334155]" : "bg-white border-border hover:bg-[#F8FAFC]"
+      )}>
         <div className="[writing-mode:vertical-rl] flex items-center gap-2 py-2">
-          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground group-hover:text-[#3B82F6] transition-colors">Check-In</span>
+          <span className={cn(
+            "text-[10px] font-black uppercase tracking-widest transition-colors",
+            isDarkMode ? "text-slate-400 group-hover:text-blue-400" : "text-muted-foreground group-hover:text-[#3B82F6]"
+          )}>Check-In</span>
         </div>
       </div>
     </div>
@@ -1175,11 +1382,13 @@ function MetricCard({
 function TradeLogView({ 
   trades, 
   onBack, 
-  onEditTrade 
+  onEditTrade,
+  isDarkMode
 }: { 
   trades: Trade[]; 
   onBack: () => void; 
   onEditTrade: (trade: Trade) => void;
+  isDarkMode?: boolean;
 }) {
   const [viewMode, setViewMode] = React.useState<'list' | 'grid'>('list');
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -1223,9 +1432,15 @@ function TradeLogView({
   };
 
   return (
-    <div className="flex flex-col h-screen w-full bg-background text-foreground overflow-hidden dark">
+    <div className={cn(
+      "flex flex-col h-screen w-full text-foreground overflow-hidden transition-colors duration-300",
+      isDarkMode ? "bg-[#0F172A] dark" : "bg-background"
+    )}>
       {/* Header */}
-      <header className="min-h-16 py-3 bg-card/50 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 sticky top-0 z-10 gap-4 border-b border-border">
+      <header className={cn(
+        "min-h-16 py-3 flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 sticky top-0 z-10 gap-4 border-b transition-colors duration-300",
+        isDarkMode ? "bg-[#1E293B] border-slate-700/50" : "bg-card/50 backdrop-blur-md border-border"
+      )}>
         <div className="flex items-center gap-4 w-full sm:w-auto">
           <Button variant="ghost" size="icon" onClick={onBack} className="rounded-full h-10 w-10 shrink-0">
             <ArrowLeft size={20} />
@@ -1467,7 +1682,7 @@ function TradeLogView({
   );
 }
 
-function RiskCalculator({ onBack }: { onBack: () => void }) {
+function RiskCalculator({ onBack, isDarkMode }: { onBack: () => void, isDarkMode?: boolean }) {
   const [activeTool, setActiveTool] = React.useState<'risk' | 'drawdown' | 'compounding'>('risk');
   const [balance, setBalance] = React.useState(10000);
   const [riskPercent, setRiskPercent] = React.useState(1);
@@ -1487,92 +1702,81 @@ function RiskCalculator({ onBack }: { onBack: () => void }) {
   const positionSize = riskAmount / (stopLossPips * pipValue);
 
   return (
-    <div className="flex-1 flex flex-col bg-[#F8FAFC] overflow-y-auto">
-      <header className="h-[72px] bg-white flex items-center justify-between px-8 border-b border-border/50 sticky top-0 z-10">
+    <div className={cn(
+      "flex-1 flex flex-col overflow-y-auto transition-colors duration-300",
+      isDarkMode ? "bg-[#0F172A]" : "bg-[#F8FAFC]"
+    )}>
+      <header className={cn(
+        "h-[72px] flex items-center justify-between px-8 border-b sticky top-0 z-10 transition-colors duration-300",
+        isDarkMode ? "bg-[#1E293B] border-slate-700" : "bg-white border-border/50"
+      )}>
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={onBack} className="rounded-full">
+          <Button variant="ghost" size="icon" onClick={onBack} className={cn("rounded-full", isDarkMode && "text-slate-400 hover:text-white hover:bg-slate-800")}>
             <ArrowLeft size={20} />
           </Button>
-          <h2 className="text-xl font-bold text-[#0F172A]">Trading Tools</h2>
+          <h2 className={cn("text-xl font-bold", isDarkMode ? "text-white" : "text-[#0F172A]")}>Trading Tools</h2>
         </div>
       </header>
 
       <div className="p-8 max-w-4xl mx-auto w-full space-y-8">
-        <div className="flex gap-1 bg-white p-1 rounded-xl border border-border w-fit">
-          <button 
-            onClick={() => setActiveTool('risk')}
-            className={cn(
-              "px-6 py-2 rounded-lg text-sm font-bold transition-all",
-              activeTool === 'risk' ? "bg-[#3B82F6] text-white shadow-lg shadow-blue-500/20" : "text-muted-foreground hover:text-[#0F172A]"
-            )}
-          >
-            Risk Calculator
-          </button>
-          <button 
-            onClick={() => setActiveTool('drawdown')}
-            className={cn(
-              "px-6 py-2 rounded-lg text-sm font-bold transition-all",
-              activeTool === 'drawdown' ? "bg-[#3B82F6] text-white shadow-lg shadow-blue-500/20" : "text-muted-foreground hover:text-[#0F172A]"
-            )}
-          >
-            Drawdown Recovery
-          </button>
-          <button 
-            onClick={() => setActiveTool('compounding')}
-            className={cn(
-              "px-6 py-2 rounded-lg text-sm font-bold transition-all",
-              activeTool === 'compounding' ? "bg-[#3B82F6] text-white shadow-lg shadow-blue-500/20" : "text-muted-foreground hover:text-[#0F172A]"
-            )}
-          >
-            Compounding
-          </button>
+        <div className={cn(
+          "flex gap-1 p-1 rounded-xl border w-fit transition-colors",
+          isDarkMode ? "bg-[#1E293B] border-slate-700" : "bg-white border-border"
+        )}>
+          {[
+            { id: 'risk', label: 'Risk Calculator' },
+            { id: 'drawdown', label: 'Drawdown Recovery' },
+            { id: 'compounding', label: 'Compounding' }
+          ].map((tool) => (
+            <button 
+              key={tool.id}
+              onClick={() => setActiveTool(tool.id as any)}
+              className={cn(
+                "px-6 py-2 rounded-lg text-sm font-bold transition-all",
+                activeTool === tool.id 
+                  ? "bg-[#3B82F6] text-white shadow-lg shadow-blue-500/20" 
+                  : (isDarkMode ? "text-slate-400 hover:text-white" : "text-muted-foreground hover:text-[#0F172A]")
+              )}
+            >
+              {tool.label}
+            </button>
+          ))}
         </div>
 
         {activeTool === 'risk' && (
-          <div className="bg-white border border-border rounded-2xl p-8 shadow-sm space-y-6">
+          <div className={cn(
+            "rounded-2xl p-8 shadow-sm space-y-6 transition-all border",
+            isDarkMode ? "bg-[#1E293B] border-slate-700" : "bg-white border-border"
+          )}>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">Account Balance ($)</Label>
-                <Input 
-                  type="number" 
-                  value={balance} 
-                  onChange={(e) => setBalance(parseFloat(e.target.value))}
-                  className="h-12 rounded-xl border-border bg-[#F8FAFC]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">Risk Percentage (%)</Label>
-                <Input 
-                  type="number" 
-                  value={riskPercent} 
-                  onChange={(e) => setRiskPercent(parseFloat(e.target.value))}
-                  className="h-12 rounded-xl border-border bg-[#F8FAFC]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">Stop Loss (Pips/Points)</Label>
-                <Input 
-                  type="number" 
-                  value={stopLossPips} 
-                  onChange={(e) => setStopLossPips(parseFloat(e.target.value))}
-                  className="h-12 rounded-xl border-border bg-[#F8FAFC]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">Pip Value ($ per lot)</Label>
-                <Input 
-                  type="number" 
-                  value={pipValue} 
-                  onChange={(e) => setPipValue(parseFloat(e.target.value))}
-                  className="h-12 rounded-xl border-border bg-[#F8FAFC]"
-                />
-              </div>
+              {[
+                { label: "Account Balance ($)", value: balance, onChange: setBalance },
+                { label: "Risk Percentage (%)", value: riskPercent, onChange: setRiskPercent },
+                { label: "Stop Loss (Pips/Points)", value: stopLossPips, onChange: setStopLossPips },
+                { label: "Pip Value ($ per lot)", value: pipValue, onChange: setPipValue }
+              ].map((field, i) => (
+                <div key={i} className="space-y-2">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase">{field.label}</Label>
+                  <Input 
+                    type="number" 
+                    value={field.value} 
+                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                    className={cn(
+                      "h-12 rounded-xl transition-all",
+                      isDarkMode ? "bg-[#0F172A] border-slate-700 text-white" : "bg-[#F8FAFC] border-border"
+                    )}
+                  />
+                </div>
+              ))}
             </div>
 
-            <div className="pt-6 border-t border-border space-y-4">
-              <div className="flex justify-between items-center p-4 bg-[#EFF6FF] rounded-xl border border-[#3B82F6]/20">
-                <span className="text-sm font-bold text-[#1E40AF]">Risk Amount</span>
-                <span className="text-xl font-black text-[#1E40AF]">${riskAmount.toLocaleString()}</span>
+            <div className={cn("pt-6 border-t space-y-4", isDarkMode ? "border-slate-700" : "border-border")}>
+              <div className={cn(
+                "flex justify-between items-center p-4 rounded-xl border transition-all",
+                isDarkMode ? "bg-blue-500/10 border-blue-500/20" : "bg-[#EFF6FF] border-[#3B82F6]/20"
+              )}>
+                <span className={cn("text-sm font-bold", isDarkMode ? "text-blue-400" : "text-[#1E40AF]")}>Risk Amount</span>
+                <span className={cn("text-xl font-black", isDarkMode ? "text-blue-400" : "text-[#1E40AF]")}>${riskAmount.toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center p-6 bg-[#3B82F6] rounded-xl text-white shadow-lg shadow-blue-500/20">
                 <div className="space-y-1">
@@ -1586,25 +1790,34 @@ function RiskCalculator({ onBack }: { onBack: () => void }) {
         )}
 
         {activeTool === 'drawdown' && (
-          <div className="bg-white border border-border rounded-2xl p-8 shadow-sm space-y-6">
+          <div className={cn(
+            "rounded-2xl p-8 shadow-sm space-y-6 transition-all border",
+            isDarkMode ? "bg-[#1E293B] border-slate-700" : "bg-white border-border"
+          )}>
             <div className="space-y-4">
               <Label className="text-xs font-bold text-muted-foreground uppercase">Current Drawdown (%)</Label>
               <Input 
                 type="number" 
                 value={drawdownPercent} 
                 onChange={(e) => setDrawdownPercent(parseFloat(e.target.value))}
-                className="h-12 rounded-xl border-border bg-[#F8FAFC]"
+                className={cn(
+                  "h-12 rounded-xl transition-all",
+                  isDarkMode ? "bg-[#0F172A] border-slate-700 text-white" : "bg-[#F8FAFC] border-border"
+                )}
               />
-              <div className="h-2 w-full bg-[#F8FAFC] rounded-full overflow-hidden">
+              <div className={cn("h-2 w-full rounded-full overflow-hidden", isDarkMode ? "bg-[#0F172A]" : "bg-[#F8FAFC]")}>
                 <div className="h-full bg-red-500" style={{ width: `${drawdownPercent}%` }} />
               </div>
             </div>
 
-            <div className="pt-6 border-t border-border">
-              <div className="p-8 bg-red-50 rounded-2xl border border-red-100 text-center space-y-2">
-                <p className="text-sm font-bold text-red-800 uppercase tracking-widest">Recovery Needed</p>
-                <h3 className="text-4xl font-black text-red-600">{recoveryNeeded.toFixed(1)}%</h3>
-                <p className="text-xs text-red-700/70 max-w-[240px] mx-auto">
+            <div className={cn("pt-6 border-t", isDarkMode ? "border-slate-700" : "border-border")}>
+              <div className={cn(
+                "p-8 rounded-2xl border text-center space-y-2",
+                isDarkMode ? "bg-red-500/10 border-red-500/20" : "bg-red-50 border-red-100"
+              )}>
+                <p className={cn("text-sm font-bold uppercase tracking-widest", isDarkMode ? "text-red-400" : "text-red-800")}>Recovery Needed</p>
+                <h3 className={cn("text-4xl font-black", isDarkMode ? "text-red-400" : "text-red-600")}>{recoveryNeeded.toFixed(1)}%</h3>
+                <p className={cn("text-xs max-w-[240px] mx-auto", isDarkMode ? "text-red-400/70" : "text-red-700/70")}>
                   You need a {recoveryNeeded.toFixed(1)}% gain to return to your initial balance.
                 </p>
               </div>
@@ -1613,42 +1826,39 @@ function RiskCalculator({ onBack }: { onBack: () => void }) {
         )}
 
         {activeTool === 'compounding' && (
-          <div className="bg-white border border-border rounded-2xl p-8 shadow-sm space-y-6">
+          <div className={cn(
+            "rounded-2xl p-8 shadow-sm space-y-6 transition-all border",
+            isDarkMode ? "bg-[#1E293B] border-slate-700" : "bg-white border-border"
+          )}>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">Initial Balance ($)</Label>
-                <Input 
-                  type="number" 
-                  value={balance} 
-                  onChange={(e) => setBalance(parseFloat(e.target.value))}
-                  className="h-12 rounded-xl border-border bg-[#F8FAFC]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">Monthly Return (%)</Label>
-                <Input 
-                  type="number" 
-                  value={monthlyReturn} 
-                  onChange={(e) => setMonthlyReturn(parseFloat(e.target.value))}
-                  className="h-12 rounded-xl border-border bg-[#F8FAFC]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">Months</Label>
-                <Input 
-                  type="number" 
-                  value={months} 
-                  onChange={(e) => setMonths(parseFloat(e.target.value))}
-                  className="h-12 rounded-xl border-border bg-[#F8FAFC]"
-                />
-              </div>
+              {[
+                { label: "Initial Balance ($)", value: balance, onChange: setBalance },
+                { label: "Monthly Return (%)", value: monthlyReturn, onChange: setMonthlyReturn },
+                { label: "Months", value: months, onChange: setMonths }
+              ].map((field, i) => (
+                <div key={i} className="space-y-2">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase">{field.label}</Label>
+                  <Input 
+                    type="number" 
+                    value={field.value} 
+                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                    className={cn(
+                      "h-12 rounded-xl transition-all",
+                      isDarkMode ? "bg-[#0F172A] border-slate-700 text-white" : "bg-[#F8FAFC] border-border"
+                    )}
+                  />
+                </div>
+              ))}
             </div>
 
-            <div className="pt-6 border-t border-border">
-              <div className="p-8 bg-green-50 rounded-2xl border border-green-100 text-center space-y-2">
-                <p className="text-sm font-bold text-green-800 uppercase tracking-widest">Projected Balance</p>
-                <h3 className="text-4xl font-black text-green-600">${compoundedBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })}</h3>
-                <p className="text-xs text-green-700/70">
+            <div className={cn("pt-6 border-t", isDarkMode ? "border-slate-700" : "border-border")}>
+              <div className={cn(
+                "p-8 rounded-2xl border text-center space-y-2",
+                isDarkMode ? "bg-green-500/10 border-green-500/20" : "bg-green-50 border-green-100"
+              )}>
+                <p className={cn("text-sm font-bold uppercase tracking-widest", isDarkMode ? "text-green-400" : "text-green-800")}>Projected Balance</p>
+                <h3 className={cn("text-4xl font-black", isDarkMode ? "text-green-400" : "text-green-600")}>${compoundedBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })}</h3>
+                <p className={cn("text-xs", isDarkMode ? "text-green-400/70" : "text-green-700/70")}>
                   Total Profit: ${(compoundedBalance - balance).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                 </p>
               </div>
@@ -1929,18 +2139,24 @@ function SettingsView({ onBack }: { onBack: () => void }) {
   );
 }
 
-function StrategyView({ trades, onBack }: { trades: Trade[], onBack: () => void }) {
+function StrategyView({ trades, onBack, isDarkMode }: { trades: Trade[], onBack: () => void, isDarkMode?: boolean }) {
   const strategies = Array.from(new Set(trades.map(t => t.strategy || 'None')));
   
   return (
-    <div className="flex-1 flex flex-col bg-[#F8FAFC] overflow-y-auto">
-      <header className="h-[72px] bg-white flex items-center justify-between px-8 border-b border-border/50 sticky top-0 z-10">
+    <div className={cn(
+      "flex-1 flex flex-col overflow-y-auto transition-colors duration-300",
+      isDarkMode ? "bg-[#0F172A]" : "bg-[#F8FAFC]"
+    )}>
+      <header className={cn(
+        "h-[72px] flex items-center justify-between px-8 border-b sticky top-0 z-10 transition-colors duration-300",
+        isDarkMode ? "bg-[#1E293B] border-slate-700" : "bg-white border-border/50"
+      )}>
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={onBack} className="rounded-full">
+          <Button variant="ghost" size="icon" onClick={onBack} className={cn("rounded-full", isDarkMode && "text-slate-400 hover:text-white hover:bg-slate-800")}>
             <ArrowLeft size={20} />
           </Button>
           <div>
-            <h1 className="text-xl font-black text-[#0F172A]">Strategy Management</h1>
+            <h1 className={cn("text-xl font-black", isDarkMode ? "text-white" : "text-[#0F172A]")}>Strategy Management</h1>
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Track & Optimize your edges</p>
           </div>
         </div>
@@ -1958,38 +2174,49 @@ function StrategyView({ trades, onBack }: { trades: Trade[], onBack: () => void 
             const winRate = stratTrades.length > 0 ? (stratTrades.filter(t => (t.pnl || 0) > 0).length / stratTrades.length) * 100 : 0;
             
             return (
-              <div key={strat} className="bg-white border border-border rounded-2xl p-6 shadow-sm space-y-6 group hover:border-[#3B82F6]/30 transition-all">
+              <div key={strat} className={cn(
+                "rounded-2xl p-6 shadow-sm space-y-6 group transition-all border",
+                isDarkMode ? "bg-[#1E293B] border-blue-500/20 shadow-blue-500/5 hover:border-blue-500/40" : "bg-white border-border hover:border-[#3B82F6]/30"
+              )}>
                 <div className="flex items-center justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] flex items-center justify-center text-[#3B82F6]">
+                  <div className={cn(
+                    "w-10 h-10 rounded-xl flex items-center justify-center transition-colors duration-300",
+                    isDarkMode ? "bg-blue-500/10 text-blue-400" : "bg-[#EFF6FF] text-[#3B82F6]"
+                  )}>
                     <LayoutTemplate size={20} />
                   </div>
                   <Badge className={cn(
                     "text-[10px] font-bold uppercase",
-                    pnl >= 0 ? "bg-green-500/10 text-green-600 border-green-200" : "bg-red-500/10 text-red-600 border-red-200"
+                    pnl >= 0 ? 
+                      (isDarkMode ? "bg-green-500/10 text-green-400 border-green-500/20" : "bg-green-500/10 text-green-600 border-green-200") : 
+                      (isDarkMode ? "bg-red-500/10 text-red-400 border-red-500/20" : "bg-red-500/10 text-red-600 border-red-200")
                   )}>
                     {pnl >= 0 ? 'Profitable' : 'Losing'}
                   </Badge>
                 </div>
                 
                 <div className="space-y-1">
-                  <h3 className="text-lg font-black text-[#0F172A]">{strat}</h3>
+                  <h3 className={cn("text-lg font-black", isDarkMode ? "text-white" : "text-[#0F172A]")}>{strat}</h3>
                   <p className="text-xs text-muted-foreground font-medium">{stratTrades.length} trades logged</p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
+                <div className={cn("grid grid-cols-2 gap-4 pt-4 border-t", isDarkMode ? "border-slate-700" : "border-border")}>
                   <div>
                     <p className="text-[9px] font-bold text-muted-foreground uppercase mb-1">WIN RATE</p>
-                    <p className="text-sm font-black text-[#0F172A]">{winRate.toFixed(1)}%</p>
+                    <p className={cn("text-sm font-black", isDarkMode ? "text-slate-200" : "text-[#0F172A]")}>{winRate.toFixed(1)}%</p>
                   </div>
                   <div>
                     <p className="text-[9px] font-bold text-muted-foreground uppercase mb-1">TOTAL P&L</p>
-                    <p className={cn("text-sm font-black", pnl >= 0 ? "text-[#3B82F6]" : "text-[#EF4444]")}>
+                    <p className={cn("text-sm font-black", pnl >= 0 ? "text-blue-400" : "text-[#EF4444]")}>
                       ${pnl.toFixed(2)}
                     </p>
                   </div>
                 </div>
 
-                <Button variant="outline" className="w-full border-border text-xs font-bold h-10 group-hover:bg-[#3B82F6] group-hover:text-white group-hover:border-[#3B82F6] transition-all">
+                <Button variant="outline" className={cn(
+                  "w-full text-xs font-bold h-10 transition-all",
+                  isDarkMode ? "border-slate-700 text-slate-300 hover:bg-[#3B82F6] hover:text-white" : "border-border text-xs font-bold h-10 group-hover:bg-[#3B82F6] group-hover:text-white group-hover:border-[#3B82F6]"
+                )}>
                   View Detailed Stats
                 </Button>
               </div>
@@ -2001,7 +2228,7 @@ function StrategyView({ trades, onBack }: { trades: Trade[], onBack: () => void 
   );
 }
 
-function AIAgentView({ trades, onBack }: { trades: Trade[], onBack: () => void }) {
+function AIAgentView({ trades, onBack, isDarkMode }: { trades: Trade[], onBack: () => void, isDarkMode?: boolean }) {
   const [analysis, setAnalysis] = React.useState<string>('');
   const [loading, setLoading] = React.useState(false);
   const [chatInput, setChatInput] = React.useState('');
@@ -2029,14 +2256,20 @@ function AIAgentView({ trades, onBack }: { trades: Trade[], onBack: () => void }
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-[#F8FAFC] overflow-hidden">
-      <header className="h-[72px] bg-white flex items-center justify-between px-8 border-b border-border/50 sticky top-0 z-10">
+    <div className={cn(
+      "flex-1 flex flex-col overflow-hidden transition-colors duration-300",
+      isDarkMode ? "bg-[#0F172A]" : "bg-[#F8FAFC]"
+    )}>
+      <header className={cn(
+        "h-[72px] flex items-center justify-between px-8 border-b sticky top-0 z-10 transition-colors duration-300",
+        isDarkMode ? "bg-[#1E293B] border-slate-700" : "bg-white border-border/50"
+      )}>
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={onBack} className="rounded-full">
+          <Button variant="ghost" size="icon" onClick={onBack} className={cn("rounded-full", isDarkMode && "text-slate-400 hover:text-white hover:bg-slate-800")}>
             <ArrowLeft size={20} />
           </Button>
           <div>
-            <h1 className="text-xl font-black text-[#0F172A]">AI Trading Agent</h1>
+            <h1 className={cn("text-xl font-black", isDarkMode ? "text-white" : "text-[#0F172A]")}>AI Trading Agent</h1>
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Coaching & Performance Analysis</p>
           </div>
         </div>
@@ -2050,27 +2283,39 @@ function AIAgentView({ trades, onBack }: { trades: Trade[], onBack: () => void }
         </Button>
       </header>
 
-      <main className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+      <main className={cn(
+        "flex-1 overflow-y-auto p-8 custom-scrollbar",
+        isDarkMode ? "bg-[#0F172A]" : "bg-[#F8FAFC]"
+      )}>
         <div className="max-w-4xl mx-auto space-y-8">
           {/* Analysis Section */}
-          <div className="bg-white border border-[#3B82F6]/20 rounded-2xl p-8 shadow-lg shadow-blue-500/5 space-y-6">
+          <div className={cn(
+            "rounded-2xl p-8 shadow-lg space-y-6 transition-all border duration-300",
+            isDarkMode ? "bg-[#1E293B] border-blue-500/20 shadow-blue-500/5" : "bg-white border-[#3B82F6]/20 shadow-blue-500/5"
+          )}>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] flex items-center justify-center text-[#3B82F6]">
+              <div className={cn(
+                "w-10 h-10 rounded-xl flex items-center justify-center transition-colors duration-300",
+                isDarkMode ? "bg-blue-500/10 text-blue-400" : "bg-[#EFF6FF] text-[#3B82F6]"
+              )}>
                 <Sparkles size={24} />
               </div>
-              <h2 className="text-xl font-black text-[#0F172A]">Performance Insights</h2>
+              <h2 className={cn("text-xl font-black", isDarkMode ? "text-white" : "text-[#0F172A]")}>Performance Insights</h2>
             </div>
             
             {analysis ? (
-              <div className="prose prose-slate max-w-none">
-                <div className="bg-[#F8FAFC] p-6 rounded-xl border border-border whitespace-pre-wrap text-sm leading-relaxed text-[#0F172A]">
+              <div className={cn("prose max-w-none transition-colors", isDarkMode ? "prose-invert" : "prose-slate")}>
+                <div className={cn(
+                  "p-6 rounded-xl border whitespace-pre-wrap text-sm leading-relaxed",
+                  isDarkMode ? "bg-[#0F172A] border-slate-700 text-slate-300" : "bg-[#F8FAFC] border-border text-[#0F172A]"
+                )}>
                   {analysis}
                 </div>
               </div>
             ) : (
               <div className="py-12 flex flex-col items-center justify-center text-center space-y-4 opacity-40">
                 <Sparkles size={48} className="text-muted-foreground" />
-                <p className="text-sm font-medium max-w-[280px]">
+                <p className={cn("text-sm font-medium max-w-[280px]", isDarkMode ? "text-slate-400" : "text-muted-foreground")}>
                   Click "Generate New Analysis" to let the AI analyze your trading patterns.
                 </p>
               </div>
@@ -2078,19 +2323,25 @@ function AIAgentView({ trades, onBack }: { trades: Trade[], onBack: () => void }
           </div>
 
           {/* Chat Section */}
-          <div className="bg-white border border-border rounded-2xl flex flex-col h-[500px] shadow-sm">
-            <div className="p-6 border-b border-border flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#F8FAFC] flex items-center justify-center text-muted-foreground">
+          <div className={cn(
+            "rounded-2xl flex flex-col h-[500px] shadow-sm transition-all border duration-300",
+            isDarkMode ? "bg-[#1E293B] border-slate-700" : "bg-white border-border"
+          )}>
+            <div className={cn("p-6 border-b flex items-center gap-3", isDarkMode ? "border-slate-700" : "border-border")}>
+              <div className={cn(
+                "w-8 h-8 rounded-lg flex items-center justify-center",
+                isDarkMode ? "bg-[#0F172A] text-slate-400" : "bg-[#F8FAFC] text-muted-foreground"
+              )}>
                 <MessageSquare size={18} />
               </div>
-              <h3 className="text-sm font-bold text-[#0F172A]">Psychology Coach</h3>
+              <h3 className={cn("text-sm font-bold", isDarkMode ? "text-white" : "text-[#0F172A]")}>Psychology Coach</h3>
             </div>
             
             <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
               {chatHistory.length === 0 && (
                 <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-40">
                   <MessageSquare size={48} className="text-muted-foreground" />
-                  <p className="text-xs font-medium">Ask me anything about your trading psychology or strategy.</p>
+                  <p className={cn("text-xs font-medium", isDarkMode ? "text-slate-400" : "text-muted-foreground")}>Ask me anything about your trading psychology or strategy.</p>
                 </div>
               )}
               {chatHistory.map((msg, i) => (
@@ -2099,8 +2350,10 @@ function AIAgentView({ trades, onBack }: { trades: Trade[], onBack: () => void }
                   msg.role === 'user' ? "ml-auto items-end" : "mr-auto items-start"
                 )}>
                   <div className={cn(
-                    "p-4 rounded-2xl text-sm",
-                    msg.role === 'user' ? "bg-[#3B82F6] text-white rounded-tr-none" : "bg-[#F8FAFC] border border-border text-[#0F172A] rounded-tl-none"
+                    "p-4 rounded-2xl text-sm transition-all",
+                    msg.role === 'user' 
+                      ? "bg-[#3B82F6] text-white rounded-tr-none" 
+                      : (isDarkMode ? "bg-[#0F172A] border border-slate-700 text-slate-200 rounded-tl-none" : "bg-[#F8FAFC] border border-border text-[#0F172A] rounded-tl-none")
                   )}>
                     {msg.content}
                   </div>
@@ -2120,12 +2373,15 @@ function AIAgentView({ trades, onBack }: { trades: Trade[], onBack: () => void }
               )}
             </div>
 
-            <form onSubmit={handleChat} className="p-4 border-t border-border flex gap-2">
+            <form onSubmit={handleChat} className={cn("p-4 border-t flex gap-2", isDarkMode ? "border-slate-700" : "border-border")}>
               <Input 
                 placeholder="Type your question..." 
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
-                className="bg-[#F8FAFC] border-border h-12"
+                className={cn(
+                  "h-12 rounded-xl transition-all",
+                  isDarkMode ? "bg-[#0F172A] border-slate-700 text-white placeholder:text-slate-500" : "bg-[#F8FAFC] border-border"
+                )}
               />
               <Button type="submit" size="icon" className="h-12 w-12 bg-[#3B82F6] text-white">
                 <Send size={18} />
@@ -2276,7 +2532,7 @@ function QuickTradeModal({
   );
 }
 
-function TradeAnalysisView({ trades, onBack }: { trades: Trade[], onBack: () => void }) {
+function TradeAnalysisView({ trades, onBack, isDarkMode }: { trades: Trade[], onBack: () => void, isDarkMode?: boolean }) {
   const closedTrades = trades.filter(t => t.status === 'Closed');
   
   const assetPerformance = React.useMemo(() => {
@@ -2315,32 +2571,44 @@ function TradeAnalysisView({ trades, onBack }: { trades: Trade[], onBack: () => 
   }, [closedTrades]);
 
   return (
-    <div className="flex-1 flex flex-col bg-[#F8FAFC] overflow-y-auto">
-      <header className="h-[72px] bg-white flex items-center justify-between px-8 border-b border-border/50 sticky top-0 z-10">
+    <div className={cn(
+      "flex-1 flex flex-col overflow-y-auto transition-colors duration-300",
+      isDarkMode ? "bg-[#0F172A] text-slate-200" : "bg-[#F8FAFC] text-foreground"
+    )}>
+      <header className={cn(
+        "h-[72px] flex items-center justify-between px-8 border-b sticky top-0 z-10 transition-colors duration-300",
+        isDarkMode ? "bg-[#1E293B] border-slate-700/50" : "bg-white border-border/50"
+      )}>
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={onBack} className="rounded-full">
+          <Button variant="ghost" size="icon" onClick={onBack} className={cn("rounded-full", isDarkMode ? "text-slate-400 hover:text-white" : "")}>
             <ArrowLeft size={20} />
           </Button>
-          <h2 className="text-xl font-bold text-[#0F172A]">Trade Analysis</h2>
+          <h2 className={cn("text-xl font-bold", isDarkMode ? "text-white" : "text-[#0F172A]")}>Trade Analysis</h2>
         </div>
       </header>
 
       <div className="p-8 max-w-6xl mx-auto w-full space-y-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Asset Performance */}
-          <div className="bg-white border border-border rounded-2xl p-6 shadow-sm space-y-6">
+          <div className={cn(
+            "rounded-2xl p-6 shadow-sm space-y-6 transition-colors duration-300 border",
+            isDarkMode ? "bg-[#1E293B] border-slate-700/50 shadow-blue-500/5" : "bg-white border-border shadow-sm"
+          )}>
             <div className="flex items-center gap-2">
               <Globe size={18} className="text-muted-foreground" />
-              <h3 className="text-sm font-bold text-[#0F172A]">Asset Performance</h3>
+              <h3 className={cn("text-sm font-bold", isDarkMode ? "text-slate-300" : "text-[#0F172A]")}>Asset Performance</h3>
             </div>
             <div className="space-y-4">
               {assetPerformance.map((item) => (
-                <div key={item.asset} className="flex items-center justify-between p-4 bg-[#F8FAFC] rounded-xl border border-border">
+                <div key={item.asset} className={cn(
+                  "flex items-center justify-between p-4 rounded-xl border transition-colors duration-300",
+                  isDarkMode ? "bg-[#0F172A] border-slate-700" : "bg-[#F8FAFC] border-border"
+                )}>
                   <div>
-                    <p className="font-bold text-[#0F172A]">{item.asset}</p>
+                    <p className={cn("font-bold", isDarkMode ? "text-white" : "text-[#0F172A]")}>{item.asset}</p>
                     <p className="text-[10px] text-muted-foreground">{item.trades} trades • {item.winRate.toFixed(1)}% win rate</p>
                   </div>
-                  <span className={cn("font-bold", item.pnl >= 0 ? "text-[#3B82F6]" : "text-[#EF4444]")}>
+                  <span className={cn("font-bold", item.pnl >= 0 ? "text-blue-400" : "text-[#EF4444]")}>
                     ${item.pnl.toLocaleString()}
                   </span>
                 </div>
@@ -2350,19 +2618,25 @@ function TradeAnalysisView({ trades, onBack }: { trades: Trade[], onBack: () => 
           </div>
 
           {/* Strategy Performance */}
-          <div className="bg-white border border-border rounded-2xl p-6 shadow-sm space-y-6">
+          <div className={cn(
+            "rounded-2xl p-6 shadow-sm space-y-6 transition-colors duration-300 border",
+            isDarkMode ? "bg-[#1E293B] border-slate-700/50 shadow-blue-500/5" : "bg-white border-border shadow-sm"
+          )}>
             <div className="flex items-center gap-2">
               <Zap size={18} className="text-muted-foreground" />
-              <h3 className="text-sm font-bold text-[#0F172A]">Strategy Performance</h3>
+              <h3 className={cn("text-sm font-bold", isDarkMode ? "text-slate-300" : "text-[#0F172A]")}>Strategy Performance</h3>
             </div>
             <div className="space-y-4">
               {strategyPerformance.map((item) => (
-                <div key={item.strategy} className="flex items-center justify-between p-4 bg-[#F8FAFC] rounded-xl border border-border">
+                <div key={item.strategy} className={cn(
+                  "flex items-center justify-between p-4 rounded-xl border transition-colors duration-300",
+                  isDarkMode ? "bg-[#0F172A] border-slate-700" : "bg-[#F8FAFC] border-border"
+                )}>
                   <div>
-                    <p className="font-bold text-[#0F172A]">{item.strategy}</p>
+                    <p className={cn("font-bold", isDarkMode ? "text-white" : "text-[#0F172A]")}>{item.strategy}</p>
                     <p className="text-[10px] text-muted-foreground">{item.trades} trades • {item.winRate.toFixed(1)}% win rate</p>
                   </div>
-                  <span className={cn("font-bold", item.pnl >= 0 ? "text-[#3B82F6]" : "text-[#EF4444]")}>
+                  <span className={cn("font-bold", item.pnl >= 0 ? "text-blue-400" : "text-[#EF4444]")}>
                     ${item.pnl.toLocaleString()}
                   </span>
                 </div>

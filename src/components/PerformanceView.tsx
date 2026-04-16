@@ -44,9 +44,10 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, subDays
 interface PerformanceViewProps {
   trades: Trade[];
   onBack: () => void;
+  isDarkMode?: boolean;
 }
 
-export function PerformanceView({ trades, onBack }: PerformanceViewProps) {
+export function PerformanceView({ trades, onBack, isDarkMode }: PerformanceViewProps) {
   const [timePeriod, setTimePeriod] = React.useState('30 Days');
   const [filterBy, setFilterBy] = React.useState('All Trades');
 
@@ -90,33 +91,44 @@ export function PerformanceView({ trades, onBack }: PerformanceViewProps) {
   });
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-4 sm:p-8 custom-scrollbar">
+    <div className={cn(
+      "flex-1 overflow-y-auto p-4 sm:p-8 custom-scrollbar transition-colors duration-300",
+      isDarkMode ? "bg-[#0F172A] text-slate-200" : "bg-[#F8FAFC] text-foreground"
+    )}>
       <div className="max-w-[1600px] mx-auto space-y-8">
         
         {/* Header */}
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
           <div className="space-y-1">
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={onBack} className="rounded-full sm:hidden">
+              <Button variant="ghost" size="icon" onClick={onBack} className={cn("rounded-full sm:hidden", isDarkMode && "text-slate-400 hover:text-white")}>
                 <ArrowLeft size={20} />
               </Button>
-              <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] flex items-center justify-center text-[#3B82F6] shrink-0">
+              <div className={cn(
+                "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border transition-colors duration-300",
+                isDarkMode ? "bg-blue-500/10 text-blue-400 border-blue-500/20" : "bg-[#EFF6FF] text-[#3B82F6] border-transparent"
+              )}>
                 <LineChart size={24} />
               </div>
-              <h1 className="text-xl sm:text-2xl font-black text-[#0F172A]">Performance Analytics</h1>
+              <h1 className={cn("text-xl sm:text-2xl font-black", isDarkMode ? "text-white" : "text-[#0F172A]")}>Performance Analytics</h1>
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground font-medium">Analyze your trading patterns and improve your strategy</p>
           </div>
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <div className="flex items-center bg-white p-1 rounded-xl border border-border shadow-sm overflow-x-auto max-w-full">
+            <div className={cn(
+              "flex items-center p-1 rounded-xl border shadow-sm overflow-x-auto max-w-full transition-colors duration-300",
+              isDarkMode ? "bg-[#1E293B] border-slate-700/50" : "bg-white border-border"
+            )}>
               {['Today', '7 Days', '30 Days', '3 Months', '1 Year', 'All Time'].map((p) => (
                 <button 
                   key={p}
                   onClick={() => setTimePeriod(p)}
                   className={cn(
                     "px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all whitespace-nowrap",
-                    timePeriod === p ? "bg-[#3B82F6] text-white shadow-md" : "text-muted-foreground hover:text-[#0F172A]"
+                    timePeriod === p 
+                      ? "bg-[#3B82F6] text-white shadow-md shadow-blue-500/20" 
+                      : (isDarkMode ? "text-slate-400 hover:text-white" : "text-muted-foreground hover:text-[#0F172A]")
                   )}
                 >
                   {p}
@@ -124,14 +136,19 @@ export function PerformanceView({ trades, onBack }: PerformanceViewProps) {
               ))}
             </div>
 
-            <div className="flex items-center bg-white p-1 rounded-xl border border-border shadow-sm">
+            <div className={cn(
+              "flex items-center p-1 rounded-xl border shadow-sm transition-colors duration-300",
+              isDarkMode ? "bg-[#1E293B] border-slate-700/50" : "bg-white border-border"
+            )}>
               {['All Trades', 'Winners', 'Losers'].map((f) => (
                 <button 
                   key={f}
                   onClick={() => setFilterBy(f)}
                   className={cn(
                     "px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all flex items-center gap-2 whitespace-nowrap",
-                    filterBy === f ? "bg-[#3B82F6] text-white shadow-md" : "text-muted-foreground hover:text-[#0F172A]"
+                    filterBy === f 
+                      ? "bg-[#3B82F6] text-white shadow-md shadow-blue-500/20" 
+                      : (isDarkMode ? "text-slate-400 hover:text-white" : "text-muted-foreground hover:text-[#0F172A]")
                   )}
                 >
                   {f === 'Winners' && <CheckCircle2 size={12} />}
@@ -152,6 +169,7 @@ export function PerformanceView({ trades, onBack }: PerformanceViewProps) {
             icon={<Wallet size={20} />}
             trend={totalPnl >= 0 ? 'up' : 'down'}
             description="Your net profit/loss for the selected period"
+            isDarkMode={isDarkMode}
           />
           <MetricCard 
             title="WIN RATE" 
@@ -160,6 +178,7 @@ export function PerformanceView({ trades, onBack }: PerformanceViewProps) {
             icon={<Target size={20} />}
             progress={winRate}
             description="Percentage of profitable trades"
+            isDarkMode={isDarkMode}
           />
           <MetricCard 
             title="PROFIT FACTOR" 
@@ -167,6 +186,7 @@ export function PerformanceView({ trades, onBack }: PerformanceViewProps) {
             subtext={profitFactor >= 1.5 ? 'Excellent' : profitFactor >= 1 ? 'Good' : 'Needs Work'}
             icon={<BarChart3 size={20} />}
             description="Gross profit ÷ Gross loss (above 1.5 is good)"
+            isDarkMode={isDarkMode}
           />
           <MetricCard 
             title="EXPECTANCY" 
@@ -174,38 +194,48 @@ export function PerformanceView({ trades, onBack }: PerformanceViewProps) {
             subtext="Average per trade"
             icon={<Zap size={20} />}
             description="Expected profit per trade based on your stats"
+            isDarkMode={isDarkMode}
           />
         </div>
 
         {/* Quick Stats & Equity Curve Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="bg-white border border-border rounded-2xl p-6 shadow-sm space-y-6">
+          <div className={cn(
+            "rounded-2xl p-6 shadow-sm space-y-6 transition-colors duration-300 border",
+            isDarkMode ? "bg-[#1E293B] border-slate-700/50 shadow-blue-500/5" : "bg-white border-border"
+          )}>
             <div className="flex items-center gap-2 mb-2">
               <LayoutGrid size={18} className="text-muted-foreground" />
-              <h3 className="text-sm font-bold text-[#0F172A]">Quick Stats</h3>
+              <h3 className={cn("text-sm font-bold", isDarkMode ? "text-slate-300" : "text-[#0F172A]")}>Quick Stats</h3>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <StatBox label="AVG WINNER" value={`$${avgWinner.toFixed(2)}`} color="green" />
-              <StatBox label="AVG LOSER" value={`-$${avgLoser.toFixed(2)}`} color="red" />
-              <StatBox label="BEST TRADE" value={`$${bestTrade.toFixed(2)}`} color="blue" />
-              <StatBox label="WORST TRADE" value={`$${worstTrade.toFixed(2)}`} color="red" />
-              <StatBox label="WIN STREAK" value="1 trades" />
-              <StatBox label="LOSS STREAK" value="0 trades" />
-              <StatBox label="RISK:REWARD" value="1:0.00" color="red" />
-              <StatBox label="OPEN TRADES" value="0" />
+              <StatBox label="AVG WINNER" value={`$${avgWinner.toFixed(2)}`} color="green" isDarkMode={isDarkMode} />
+              <StatBox label="AVG LOSER" value={`-$${avgLoser.toFixed(2)}`} color="red" isDarkMode={isDarkMode} />
+              <StatBox label="BEST TRADE" value={`$${bestTrade.toFixed(2)}`} color="blue" isDarkMode={isDarkMode} />
+              <StatBox label="WORST TRADE" value={`$${worstTrade.toFixed(2)}`} color="red" isDarkMode={isDarkMode} />
+              <StatBox label="WIN STREAK" value="1 trades" isDarkMode={isDarkMode} />
+              <StatBox label="LOSS STREAK" value="0 trades" isDarkMode={isDarkMode} />
+              <StatBox label="RISK:REWARD" value="1:0.00" color="red" isDarkMode={isDarkMode} />
+              <StatBox label="OPEN TRADES" value="0" isDarkMode={isDarkMode} />
             </div>
           </div>
 
-          <div className="lg:col-span-2 bg-white border border-[#3B82F6]/20 rounded-2xl p-6 shadow-lg shadow-blue-500/5 flex flex-col">
+          <div className={cn(
+            "lg:col-span-2 rounded-2xl p-6 shadow-lg flex flex-col transition-colors duration-300 border",
+            isDarkMode ? "bg-[#1E293B] border-blue-500/20 shadow-blue-500/5" : "bg-white border-[#3B82F6]/20 shadow-blue-500/5"
+          )}>
             <div className="flex items-center justify-between mb-8">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <LineChart size={18} className="text-muted-foreground" />
-                  <h3 className="text-sm font-bold text-[#0F172A]">Equity Curve</h3>
+                  <h3 className={cn("text-sm font-bold", isDarkMode ? "text-slate-300" : "text-[#0F172A]")}>Equity Curve</h3>
                 </div>
                 <p className="text-[10px] text-muted-foreground font-medium">Cumulative P&L progression</p>
               </div>
-              <div className="flex items-center bg-[#F8FAFC] p-1 rounded-lg border border-border">
+              <div className={cn(
+                "flex items-center p-1 rounded-lg border transition-colors duration-300",
+                isDarkMode ? "bg-[#0F172A] border-slate-700" : "bg-[#F8FAFC] border-border"
+              )}>
                 <button className="px-3 py-1 text-[10px] font-bold rounded-md bg-[#3B82F6] text-white shadow-sm">Equity</button>
                 <button className="px-3 py-1 text-[10px] font-bold text-muted-foreground hover:text-[#0F172A]">Drawdown</button>
               </div>
@@ -220,23 +250,30 @@ export function PerformanceView({ trades, onBack }: PerformanceViewProps) {
                         <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? "#334155" : "#f1f5f9"} />
                     <XAxis 
                       dataKey="date" 
                       axisLine={false} 
                       tickLine={false} 
-                      tick={{ fontSize: 10, fill: '#94a3b8' }}
+                      tick={{ fontSize: 10, fill: isDarkMode ? '#64748b' : '#94a3b8' }}
                       dy={10}
                     />
                     <YAxis 
                       axisLine={false} 
                       tickLine={false} 
-                      tick={{ fontSize: 10, fill: '#94a3b8' }}
+                      tick={{ fontSize: 10, fill: isDarkMode ? '#64748b' : '#94a3b8' }}
                       tickFormatter={(value) => `$${value}`}
                     />
                     <Tooltip 
-                      contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                      labelStyle={{ fontWeight: 'bold', marginBottom: '4px' }}
+                      contentStyle={{ 
+                        backgroundColor: isDarkMode ? '#1e293b' : '#fff', 
+                        borderRadius: '12px', 
+                        border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0', 
+                        boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                        color: isDarkMode ? '#e2e8f0' : '#0f172a'
+                      }}
+                      itemStyle={{ color: isDarkMode ? '#94a3b8' : '#64748b' }}
+                      labelStyle={{ fontWeight: 'bold', marginBottom: '4px', color: isDarkMode ? '#f8fafc' : '#0f172a' }}
                     />
                     <Area 
                       type="monotone" 
@@ -260,11 +297,14 @@ export function PerformanceView({ trades, onBack }: PerformanceViewProps) {
 
         {/* Long vs Short & Day Performance Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white border border-[#3B82F6]/20 rounded-2xl p-6 shadow-lg shadow-blue-500/5 space-y-6">
+          <div className={cn(
+            "rounded-2xl p-6 shadow-lg space-y-6 transition-colors duration-300 border",
+            isDarkMode ? "bg-[#1E293B] border-blue-500/20 shadow-blue-500/5" : "bg-white border-[#3B82F6]/20 shadow-blue-500/5"
+          )}>
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <TrendingUp size={18} className="text-muted-foreground" />
-                <h3 className="text-sm font-bold text-[#0F172A]">Long vs Short</h3>
+                <h3 className={cn("text-sm font-bold", isDarkMode ? "text-slate-300" : "text-[#0F172A]")}>Long vs Short</h3>
               </div>
               <p className="text-[10px] text-muted-foreground font-medium">Performance by trade direction</p>
             </div>
@@ -274,21 +314,26 @@ export function PerformanceView({ trades, onBack }: PerformanceViewProps) {
                 trades={closedTrades.filter(t => t.side === 'Long').length}
                 pnl={closedTrades.filter(t => t.side === 'Long').reduce((acc, t) => acc + (t.pnl || 0), 0)}
                 winRate={closedTrades.filter(t => t.side === 'Long').length > 0 ? (closedTrades.filter(t => t.side === 'Long' && (t.pnl || 0) > 0).length / closedTrades.filter(t => t.side === 'Long').length) * 100 : 0}
+                isDarkMode={isDarkMode}
               />
               <DirectionCard 
                 type="Short" 
                 trades={closedTrades.filter(t => t.side === 'Short').length}
                 pnl={closedTrades.filter(t => t.side === 'Short').reduce((acc, t) => acc + (t.pnl || 0), 0)}
                 winRate={closedTrades.filter(t => t.side === 'Short').length > 0 ? (closedTrades.filter(t => t.side === 'Short' && (t.pnl || 0) > 0).length / closedTrades.filter(t => t.side === 'Short').length) * 100 : 0}
+                isDarkMode={isDarkMode}
               />
             </div>
           </div>
 
-          <div className="bg-white border border-[#3B82F6]/20 rounded-2xl p-6 shadow-lg shadow-blue-500/5 space-y-6">
+          <div className={cn(
+            "rounded-2xl p-6 shadow-lg space-y-6 transition-colors duration-300 border",
+            isDarkMode ? "bg-[#1E293B] border-blue-500/20 shadow-blue-500/5" : "bg-white border-[#3B82F6]/20 shadow-blue-500/5"
+          )}>
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <CalendarIcon size={18} className="text-muted-foreground" />
-                <h3 className="text-sm font-bold text-[#0F172A]">Day Performance</h3>
+                <h3 className={cn("text-sm font-bold", isDarkMode ? "text-slate-300" : "text-[#0F172A]")}>Day Performance</h3>
               </div>
               <p className="text-[10px] text-muted-foreground font-medium">Find your best trading days</p>
             </div>
@@ -301,11 +346,17 @@ export function PerformanceView({ trades, onBack }: PerformanceViewProps) {
                     type="category" 
                     axisLine={false} 
                     tickLine={false} 
-                    tick={{ fontSize: 12, fontWeight: 'bold', fill: '#0F172A' }}
+                    tick={{ fontSize: 12, fontWeight: 'bold', fill: isDarkMode ? '#f8fafc' : '#0F172A' }}
                   />
                   <Tooltip 
                     cursor={{ fill: 'transparent' }}
-                    contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0' }}
+                    contentStyle={{ 
+                      backgroundColor: isDarkMode ? '#1e293b' : '#fff', 
+                      borderRadius: '12px', 
+                      border: isDarkMode ? '1px solid #334155' : '1px solid #e2e8f0',
+                      color: isDarkMode ? '#e2e8f0' : '#0f172a'
+                    }}
+                    labelStyle={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}
                   />
                   <Bar dataKey="pnl" radius={[0, 4, 4, 0]} barSize={12}>
                     {dayPerformance.map((entry, index) => (
@@ -319,11 +370,14 @@ export function PerformanceView({ trades, onBack }: PerformanceViewProps) {
         </div>
 
         {/* Top Symbols */}
-        <div className="bg-white border border-[#3B82F6]/20 rounded-2xl p-6 shadow-lg shadow-blue-500/5 space-y-6">
+        <div className={cn(
+          "rounded-2xl p-6 shadow-lg space-y-6 transition-colors duration-300 border",
+          isDarkMode ? "bg-[#1E293B] border-blue-500/20 shadow-blue-500/5" : "bg-white border-[#3B82F6]/20 shadow-blue-500/5"
+        )}>
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Globe size={18} className="text-muted-foreground" />
-              <h3 className="text-sm font-bold text-[#0F172A]">Top Symbols</h3>
+              <h3 className={cn("text-sm font-bold", isDarkMode ? "text-slate-300" : "text-[#0F172A]")}>Top Symbols</h3>
             </div>
             <p className="text-[10px] text-muted-foreground font-medium">Best performing assets</p>
           </div>
@@ -333,17 +387,23 @@ export function PerformanceView({ trades, onBack }: PerformanceViewProps) {
               const pnl = assetTrades.reduce((acc, t) => acc + (t.pnl || 0), 0);
               const wr = (assetTrades.filter(t => (t.pnl || 0) > 0).length / assetTrades.length) * 100;
               return (
-                <div key={asset} className="flex items-center justify-between p-4 bg-[#F8FAFC] rounded-xl border border-border group hover:border-[#3B82F6]/30 transition-all">
+                <div key={asset} className={cn(
+                  "flex items-center justify-between p-4 rounded-xl border group hover:border-blue-500/30 transition-all duration-300",
+                  isDarkMode ? "bg-[#0F172A] border-slate-700" : "bg-[#F8FAFC] border-border"
+                )}>
                   <div className="flex items-center gap-4">
-                    <div className="w-8 h-8 rounded-lg bg-[#EFF6FF] flex items-center justify-center text-[10px] font-black text-[#3B82F6]">
+                    <div className={cn(
+                      "w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black border",
+                      isDarkMode ? "bg-[#334155] text-blue-400 border-slate-600" : "bg-[#EFF6FF] text-[#3B82F6] border-transparent"
+                    )}>
                       {i + 1}
                     </div>
                     <div>
-                      <p className="text-sm font-black text-[#0F172A]">{asset}</p>
+                      <p className={cn("text-sm font-black", isDarkMode ? "text-white" : "text-[#0F172A]")}>{asset}</p>
                       <p className="text-[10px] text-muted-foreground font-bold">{assetTrades.length} trades • {wr.toFixed(0)}% win</p>
                     </div>
                   </div>
-                  <span className={cn("text-sm font-black", pnl >= 0 ? "text-[#3B82F6]" : "text-[#EF4444]")}>
+                  <span className={cn("text-sm font-black", pnl >= 0 ? "text-blue-400" : "text-[#EF4444]")}>
                     ${pnl.toFixed(2)}
                   </span>
                 </div>
@@ -353,16 +413,22 @@ export function PerformanceView({ trades, onBack }: PerformanceViewProps) {
         </div>
 
         {/* Session Performance */}
-        <div className="bg-white border border-[#3B82F6]/20 rounded-2xl p-6 shadow-lg shadow-blue-500/5 space-y-6">
+        <div className={cn(
+          "rounded-2xl p-6 shadow-lg space-y-6 transition-colors duration-300 border",
+          isDarkMode ? "bg-[#1E293B] border-blue-500/20 shadow-blue-500/5" : "bg-white border-[#3B82F6]/20 shadow-blue-500/5"
+        )}>
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Globe size={18} className="text-muted-foreground" />
-              <h3 className="text-sm font-bold text-[#0F172A]">Session Performance</h3>
+              <h3 className={cn("text-sm font-bold", isDarkMode ? "text-slate-300" : "text-[#0F172A]")}>Session Performance</h3>
             </div>
             <p className="text-[10px] text-muted-foreground font-medium">Breakdown by trading session — Asian, London & New York</p>
           </div>
           
-          <div className="relative h-12 bg-[#F8FAFC] rounded-xl border border-border overflow-hidden flex mb-8">
+          <div className={cn(
+            "relative h-12 rounded-xl border overflow-hidden flex mb-8 transition-colors duration-300",
+            isDarkMode ? "bg-[#0F172A] border-slate-700" : "bg-[#F8FAFC] border-border"
+          )}>
             <SessionSegment label="ASIAN" color="#F59E0B" start="00:00" end="08:00" />
             <SessionSegment label="LONDON" color="#3B82F6" start="08:00" end="13:00" />
             <SessionSegment label="NEW YORK" color="#10B981" start="13:00" end="22:00" />
@@ -384,6 +450,7 @@ export function PerformanceView({ trades, onBack }: PerformanceViewProps) {
               pnl={0}
               trades={0}
               winRate={0}
+              isDarkMode={isDarkMode}
             />
             <SessionCard 
               name="London" 
@@ -394,6 +461,7 @@ export function PerformanceView({ trades, onBack }: PerformanceViewProps) {
               trades={closedTrades.length}
               winRate={winRate}
               avgTrade={expectancy}
+              isDarkMode={isDarkMode}
             />
             <SessionCard 
               name="New York" 
@@ -403,25 +471,32 @@ export function PerformanceView({ trades, onBack }: PerformanceViewProps) {
               pnl={0}
               trades={0}
               winRate={0}
+              isDarkMode={isDarkMode}
             />
           </div>
         </div>
 
         {/* Trading Calendar */}
-        <div className="bg-white border border-[#3B82F6]/20 rounded-2xl p-6 shadow-lg shadow-blue-500/5 space-y-6">
+        <div className={cn(
+          "rounded-2xl p-6 shadow-lg space-y-6 transition-colors duration-300 border",
+          isDarkMode ? "bg-[#1E293B] border-blue-500/20 shadow-blue-500/5" : "bg-white border-[#3B82F6]/20 shadow-blue-500/5"
+        )}>
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <CalendarIcon size={18} className="text-muted-foreground" />
-                <h3 className="text-sm font-bold text-[#0F172A]">Trading Calendar</h3>
+                <h3 className={cn("text-sm font-bold", isDarkMode ? "text-slate-300" : "text-[#0F172A]")}>Trading Calendar</h3>
               </div>
               <p className="text-[10px] text-muted-foreground font-medium">Daily P&L heatmap - Click on days to see trades</p>
             </div>
             <div className="flex items-center gap-4">
-              <div className="flex items-center bg-[#F8FAFC] p-1 rounded-lg border border-border">
-                <button className="p-1.5 hover:bg-white rounded-md transition-all"><ChevronLeft size={14} /></button>
-                <span className="px-4 text-xs font-bold text-[#0F172A]">April 2026</span>
-                <button className="p-1.5 hover:bg-white rounded-md transition-all"><ChevronRight size={14} /></button>
+              <div className={cn(
+                "flex items-center p-1 rounded-lg border transition-colors duration-300",
+                isDarkMode ? "bg-[#0F172A] border-slate-700" : "bg-[#F8FAFC] border-border"
+              )}>
+                <button className={cn("p-1.5 rounded-md transition-all", isDarkMode ? "hover:bg-[#334155]" : "hover:bg-white")}><ChevronLeft size={14} /></button>
+                <span className={cn("px-4 text-xs font-bold", isDarkMode ? "text-white" : "text-[#0F172A]")}>April 2026</span>
+                <button className={cn("p-1.5 rounded-md transition-all", isDarkMode ? "hover:bg-[#334155]" : "hover:bg-white")}><ChevronRight size={14} /></button>
               </div>
             </div>
           </div>
@@ -440,14 +515,16 @@ export function PerformanceView({ trades, onBack }: PerformanceViewProps) {
                     <div 
                       key={i} 
                       className={cn(
-                        "aspect-square rounded-xl border border-border p-2 flex flex-col justify-between transition-all cursor-pointer hover:border-[#3B82F6]/50",
-                        isToday ? "bg-[#EFF6FF] border-[#3B82F6]/30" : "bg-[#F8FAFC]"
+                        "aspect-square rounded-xl border p-2 flex flex-col justify-between transition-all cursor-pointer hover:border-blue-500/50",
+                        isToday 
+                          ? (isDarkMode ? "bg-blue-500/10 border-blue-500/30" : "bg-[#EFF6FF] border-[#3B82F6]/30") 
+                          : (isDarkMode ? "bg-[#0F172A] border-slate-700" : "bg-[#F8FAFC] border-border")
                       )}
                     >
                       <span className="text-[10px] font-bold text-muted-foreground">{day}</span>
                       {isToday && (
                         <div className="text-center">
-                          <p className="text-[10px] font-black text-[#3B82F6]">${totalPnl.toFixed(2)}</p>
+                          <p className="text-[10px] font-black text-blue-400">${totalPnl.toFixed(2)}</p>
                           <p className="text-[8px] font-bold text-muted-foreground">{closedTrades.length} trade</p>
                         </div>
                       )}
@@ -457,9 +534,12 @@ export function PerformanceView({ trades, onBack }: PerformanceViewProps) {
                 {/* Weekly stats column placeholder */}
                 <div className="col-start-8 row-start-2 row-span-5 space-y-2">
                   {[0, 0, totalPnl, 0, 0].map((val, i) => (
-                    <div key={i} className="aspect-square rounded-xl bg-[#EFF6FF]/50 border border-[#3B82F6]/10 flex flex-col items-center justify-center text-center p-2">
+                    <div key={i} className={cn(
+                      "aspect-square rounded-xl border flex flex-col items-center justify-center text-center p-2 transition-colors duration-300",
+                      isDarkMode ? "bg-blue-500/5 border-blue-500/10" : "bg-[#EFF6FF]/50 border-[#3B82F6]/10"
+                    )}>
                       <p className="text-[8px] font-black text-muted-foreground uppercase">WEEKLY</p>
-                      <p className={cn("text-[10px] font-black", val >= 0 ? "text-[#3B82F6]" : "text-[#EF4444]")}>
+                      <p className={cn("text-[10px] font-black", val >= 0 ? "text-blue-400" : "text-[#EF4444]")}>
                         {val >= 0 ? '+' : ''}${val.toFixed(0)}
                       </p>
                       <p className="text-[7px] font-bold text-muted-foreground">Traded Days {val !== 0 ? 1 : 0}</p>
@@ -470,18 +550,24 @@ export function PerformanceView({ trades, onBack }: PerformanceViewProps) {
               <div className="flex items-center justify-center gap-6 pt-4">
                 <LegendItem color="#3B82F6" label="Profitable Day" />
                 <LegendItem color="#EF4444" label="Losing Day" />
-                <LegendItem color="#94A3B8" label="No Trades" />
+                <LegendItem color={isDarkMode ? "#334155" : "#94A3B8"} label="No Trades" />
               </div>
             </div>
 
-            <div className="bg-white border border-[#3B82F6]/20 rounded-2xl p-6 shadow-lg shadow-blue-500/5 flex flex-col">
+            <div className={cn(
+              "rounded-2xl p-6 shadow-lg flex flex-col transition-colors duration-300 border",
+              isDarkMode ? "bg-[#0F172A] border-slate-700 shadow-blue-500/5" : "bg-white border-[#3B82F6]/20 shadow-blue-500/5"
+            )}>
               <div className="flex items-center gap-2 mb-6">
-                <div className="w-8 h-8 rounded-lg bg-[#EFF6FF] flex items-center justify-center text-[#3B82F6]">
+                <div className={cn(
+                  "w-8 h-8 rounded-lg flex items-center justify-center",
+                  isDarkMode ? "bg-blue-500/10 text-blue-400" : "bg-[#EFF6FF] text-[#3B82F6]"
+                )}>
                   <ArrowUpRight size={18} />
                 </div>
-                <h3 className="text-sm font-bold text-[#0F172A]">Day Trades</h3>
+                <h3 className={cn("text-sm font-bold", isDarkMode ? "text-white" : "text-[#0F172A]")}>Day Trades</h3>
               </div>
-              <div className="flex-1 flex flex-col items-center justify-center text-center space-y-4 opacity-40">
+              <div className="flex-1 flex flex-col items-center justify-center text-center p-4 space-y-4 opacity-40">
                 <CalendarIcon size={48} className="text-muted-foreground" />
                 <p className="text-xs font-medium text-muted-foreground max-w-[160px]">Click on a day with trades to view details</p>
               </div>
@@ -491,47 +577,62 @@ export function PerformanceView({ trades, onBack }: PerformanceViewProps) {
 
         {/* Win/Loss Distribution & Recent Trades */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="bg-white border border-[#3B82F6]/20 rounded-2xl p-6 shadow-lg shadow-blue-500/5 space-y-6">
+          <div className={cn(
+            "rounded-2xl p-6 shadow-lg space-y-6 transition-colors duration-300 border",
+            isDarkMode ? "bg-[#1E293B] border-blue-500/20 shadow-blue-500/5" : "bg-white border-[#3B82F6]/20 shadow-blue-500/5"
+          )}>
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <BarChart3 size={18} className="text-muted-foreground" />
-                <h3 className="text-sm font-bold text-[#0F172A]">Win/Loss Distribution</h3>
+                <h3 className={cn("text-sm font-bold", isDarkMode ? "text-slate-300" : "text-[#0F172A]")}>Win/Loss Distribution</h3>
               </div>
             </div>
             <div className="space-y-6">
-              <div className="h-12 w-full bg-[#F8FAFC] rounded-xl border border-border overflow-hidden flex">
-                <div className="h-full bg-[#3B82F6]" style={{ width: `${(grossProfit / (grossProfit + grossLoss || 1)) * 100}%` }} />
+              <div className={cn(
+                "h-12 w-full rounded-xl border overflow-hidden flex transition-colors duration-300",
+                isDarkMode ? "bg-[#0F172A] border-slate-700" : "bg-[#F8FAFC] border-border"
+              )}>
+                <div className="h-full bg-blue-500" style={{ width: `${(grossProfit / (grossProfit + grossLoss || 1)) * 100}%` }} />
                 <div className="h-full bg-[#EF4444]" style={{ width: `${(grossLoss / (grossProfit + grossLoss || 1)) * 100}%` }} />
               </div>
               <div className="space-y-3">
-                <DistributionRow label="Gross Profit" value={`$${grossProfit.toFixed(2)}`} color="#3B82F6" />
-                <DistributionRow label="Gross Loss" value={`-$${grossLoss.toFixed(2)}`} color="#EF4444" />
-                <DistributionRow label="Net Result" value={`$${totalPnl.toFixed(2)}`} color="#3B82F6" isTotal />
+                <DistributionRow label="Gross Profit" value={`$${grossProfit.toFixed(2)}`} color="#3B82F6" isDarkMode={isDarkMode} />
+                <DistributionRow label="Gross Loss" value={`-$${grossLoss.toFixed(2)}`} color="#EF4444" isDarkMode={isDarkMode} />
+                <DistributionRow label="Net Result" value={`$${totalPnl.toFixed(2)}`} color="#3B82F6" isTotal isDarkMode={isDarkMode} />
               </div>
             </div>
           </div>
 
-          <div className="lg:col-span-2 bg-white border border-[#3B82F6]/20 rounded-2xl p-6 shadow-lg shadow-blue-500/5 space-y-6">
+          <div className={cn(
+            "lg:col-span-2 rounded-2xl p-6 shadow-lg space-y-6 transition-colors duration-300 border",
+            isDarkMode ? "bg-[#1E293B] border-blue-500/20 shadow-blue-500/5" : "bg-white border-[#3B82F6]/20 shadow-blue-500/5"
+          )}>
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <Clock size={18} className="text-muted-foreground" />
-                <h3 className="text-sm font-bold text-[#0F172A]">Recent Trades</h3>
+                <h3 className={cn("text-sm font-bold", isDarkMode ? "text-slate-300" : "text-[#0F172A]")}>Recent Trades</h3>
               </div>
               <p className="text-[10px] text-muted-foreground font-medium">Your last 10 trades</p>
             </div>
             <div className="space-y-2">
               {closedTrades.slice(0, 5).map(trade => (
-                <div key={trade.id} className="flex items-center justify-between p-4 bg-[#F8FAFC] rounded-xl border border-border hover:border-[#3B82F6]/30 transition-all cursor-pointer">
+                <div key={trade.id} className={cn(
+                  "flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer group hover:border-blue-500/30",
+                  isDarkMode ? "bg-[#0F172A] border-slate-700 hover:bg-[#1e293b]/50" : "bg-[#F8FAFC] border-border hover:bg-white"
+                )}>
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-white border border-border flex items-center justify-center text-[#3B82F6]">
+                    <div className={cn(
+                      "w-10 h-10 rounded-xl border flex items-center justify-center transition-colors duration-300",
+                      isDarkMode ? "bg-[#334155] border-slate-700 text-blue-400" : "bg-white border-border text-[#3B82F6]"
+                    )}>
                       <TrendingUp size={20} />
                     </div>
                     <div>
-                      <p className="text-sm font-black text-[#0F172A]">{trade.asset}</p>
-                      <p className="text-[10px] text-muted-foreground font-bold">{format(new Date(trade.exitTimestamp || trade.timestamp), 'MMM dd')}</p>
+                      <p className={cn("text-sm font-black", isDarkMode ? "text-white" : "text-[#0F172A]")}>{trade.asset}</p>
+                      <p className={cn("text-[10px] font-bold", isDarkMode ? "text-slate-500" : "text-muted-foreground")}>{format(new Date(trade.exitTimestamp || trade.timestamp), 'MMM dd')}</p>
                     </div>
                   </div>
-                  <span className={cn("text-sm font-black", (trade.pnl || 0) >= 0 ? "text-[#3B82F6]" : "text-[#EF4444]")}>
+                  <span className={cn("text-sm font-black", (trade.pnl || 0) >= 0 ? "text-blue-400" : "text-[#EF4444]")}>
                     ${(trade.pnl || 0).toFixed(2)}
                   </span>
                 </div>
@@ -541,49 +642,55 @@ export function PerformanceView({ trades, onBack }: PerformanceViewProps) {
         </div>
 
         {/* Detailed Stats Table */}
-        <div className="bg-white border border-[#3B82F6]/20 rounded-2xl p-8 shadow-lg shadow-blue-500/5 space-y-8">
+        <div className={cn(
+          "rounded-2xl p-8 shadow-lg space-y-8 transition-colors duration-300 border",
+          isDarkMode ? "bg-[#1E293B] border-blue-500/20 shadow-blue-500/5" : "bg-white border-[#3B82F6]/20 shadow-blue-500/5"
+        )}>
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-black text-[#0F172A]">Your Stats</h2>
-            <Badge className="bg-[#F8FAFC] text-muted-foreground border border-border text-[10px] h-6 px-3 font-bold">30 DAYS</Badge>
+            <h2 className={cn("text-xl font-black", isDarkMode ? "text-white" : "text-[#0F172A]")}>Your Stats</h2>
+            <Badge className={cn(
+              "border text-[10px] h-6 px-3 font-bold",
+               isDarkMode ? "bg-[#0F172A] text-slate-400 border-slate-700" : "bg-[#F8FAFC] text-muted-foreground border-border"
+            )}>30 DAYS</Badge>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatSummaryCard label="BEST MONTH" value={`$${totalPnl.toFixed(2)}`} subtext="Apr 2026" />
-            <StatSummaryCard label="WORST MONTH" value={`$${totalPnl.toFixed(2)}`} subtext="Apr 2026" />
-            <StatSummaryCard label="AVERAGE" value={`$${totalPnl.toFixed(2)}`} subtext="per Month" />
+            <StatSummaryCard label="BEST MONTH" value={`$${totalPnl.toFixed(2)}`} subtext="Apr 2026" isDarkMode={isDarkMode} />
+            <StatSummaryCard label="WORST MONTH" value={`$${totalPnl.toFixed(2)}`} subtext="Apr 2026" isDarkMode={isDarkMode} />
+            <StatSummaryCard label="AVERAGE" value={`$${totalPnl.toFixed(2)}`} subtext="per Month" isDarkMode={isDarkMode} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-4 pt-4 border-t border-border">
-            <DetailedStatRow label="Total P&L" value={`$${totalPnl.toFixed(2)}`} isBlue />
-            <DetailedStatRow label="Open trades" value="0" />
-            <DetailedStatRow label="Average daily volume" value="1.00" />
-            <DetailedStatRow label="Total trading days" value="1" />
-            <DetailedStatRow label="Average winning trade" value={`$${avgWinner.toFixed(2)}`} isBlue />
-            <DetailedStatRow label="Winning days" value="1" isBlue />
-            <DetailedStatRow label="Average losing trade" value={`-$${avgLoser.toFixed(2)}`} isRed />
-            <DetailedStatRow label="Losing days" value="0" isRed />
-            <DetailedStatRow label="Total number of trades" value={closedTrades.length.toString()} />
-            <DetailedStatRow label="Breakeven days" value="0" />
-            <DetailedStatRow label="Number of winning trades" value={winningTrades.length.toString()} isBlue />
-            <DetailedStatRow label="Max consecutive winning days" value="1" isBlue />
-            <DetailedStatRow label="Number of losing trades" value={losingTrades.length.toString()} isRed />
-            <DetailedStatRow label="Max consecutive losing days" value="0" isRed />
-            <DetailedStatRow label="Number of break even trades" value="0" />
-            <DetailedStatRow label="Average daily P&L" value={`$${totalPnl.toFixed(2)}`} isBlue />
-            <DetailedStatRow label="Max consecutive wins" value="1" isBlue />
-            <DetailedStatRow label="Average winning day P&L" value={`$${totalPnl.toFixed(2)}`} isBlue />
-            <DetailedStatRow label="Max consecutive losses" value="0" isRed />
-            <DetailedStatRow label="Average losing day P&L" value="$0.00" isRed />
-            <DetailedStatRow label="Total commissions" value="$0.00" />
-            <DetailedStatRow label="Largest profitable day" value={`$${totalPnl.toFixed(2)}`} isBlue />
-            <DetailedStatRow label="Total swap" value="$0.00" />
-            <DetailedStatRow label="Largest losing day" value="$0.00" isRed />
-            <DetailedStatRow label="Largest profit" value={`$${bestTrade.toFixed(2)}`} isBlue />
-            <DetailedStatRow label="Trade expectancy" value={`$${expectancy.toFixed(2)}`} isBlue />
-            <DetailedStatRow label="Largest loss" value={`$${worstTrade.toFixed(2)}`} isRed />
-            <DetailedStatRow label="Max drawdown" value="$0.00" isRed />
-            <DetailedStatRow label="Avg hold time (All)" value="2h 4m" />
-            <DetailedStatRow label="Max drawdown %" value="0%" isRed />
+            <DetailedStatRow label="Total P&L" value={`$${totalPnl.toFixed(2)}`} isBlue isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Open trades" value="0" isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Average daily volume" value="1.00" isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Total trading days" value="1" isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Average winning trade" value={`$${avgWinner.toFixed(2)}`} isBlue isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Winning days" value="1" isBlue isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Average losing trade" value={`-$${avgLoser.toFixed(2)}`} isRed isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Losing days" value="0" isRed isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Total number of trades" value={closedTrades.length.toString()} isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Breakeven days" value="0" isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Number of winning trades" value={winningTrades.length.toString()} isBlue isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Max consecutive winning days" value="1" isBlue isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Number of losing trades" value={losingTrades.length.toString()} isRed isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Max consecutive losing days" value="0" isRed isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Number of break even trades" value="0" isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Average daily P&L" value={`$${totalPnl.toFixed(2)}`} isBlue isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Max consecutive wins" value="1" isBlue isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Average winning day P&L" value={`$${totalPnl.toFixed(2)}`} isBlue isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Max consecutive losses" value="0" isRed isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Average losing day P&L" value="$0.00" isRed isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Total commissions" value="$0.00" isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Largest profitable day" value={`$${totalPnl.toFixed(2)}`} isBlue isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Total swap" value="$0.00" isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Largest losing day" value="$0.00" isRed isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Largest profit" value={`$${bestTrade.toFixed(2)}`} isBlue isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Trade expectancy" value={`$${expectancy.toFixed(2)}`} isBlue isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Largest loss" value={`$${worstTrade.toFixed(2)}`} isRed isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Max drawdown" value="$0.00" isRed isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Avg hold time (All)" value="2h 4m" isDarkMode={isDarkMode} />
+            <DetailedStatRow label="Max drawdown %" value="0%" isRed isDarkMode={isDarkMode} />
           </div>
         </div>
 
@@ -592,11 +699,17 @@ export function PerformanceView({ trades, onBack }: PerformanceViewProps) {
   );
 }
 
-function MetricCard({ title, value, subtext, icon, trend, progress, description }: any) {
+function MetricCard({ title, value, subtext, icon, trend, progress, description, isDarkMode }: any) {
   return (
-    <div className="bg-white border border-[#3B82F6]/20 rounded-2xl p-6 shadow-lg shadow-blue-500/5 space-y-4 group hover:border-[#3B82F6]/30 transition-all">
+    <div className={cn(
+      "rounded-2xl p-6 shadow-lg space-y-4 group transition-all border duration-300",
+      isDarkMode ? "bg-[#1E293B] border-blue-500/20 shadow-blue-500/5 hover:border-blue-500/40" : "bg-white border-[#3B82F6]/20 shadow-blue-500/5 hover:border-[#3B82F6]/30"
+    )}>
       <div className="flex items-center justify-between">
-        <div className="w-10 h-10 rounded-xl bg-[#F8FAFC] flex items-center justify-center text-muted-foreground group-hover:text-[#3B82F6] transition-colors">
+        <div className={cn(
+          "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
+          isDarkMode ? "bg-[#0F172A] text-slate-400 group-hover:text-blue-400" : "bg-[#F8FAFC] text-muted-foreground group-hover:text-[#3B82F6]"
+        )}>
           {icon}
         </div>
         {trend && (
@@ -611,11 +724,11 @@ function MetricCard({ title, value, subtext, icon, trend, progress, description 
       </div>
       <div className="space-y-1">
         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{title}</p>
-        <h3 className="text-2xl font-black text-[#0F172A]">{value}</h3>
+        <h3 className={cn("text-2xl font-black", isDarkMode ? "text-white" : "text-[#0F172A]")}>{value}</h3>
         <p className="text-xs text-muted-foreground font-medium">{subtext}</p>
       </div>
       {progress !== undefined && (
-        <div className="h-1.5 w-full bg-[#F8FAFC] rounded-full overflow-hidden">
+        <div className={cn("h-1.5 w-full rounded-full overflow-hidden", isDarkMode ? "bg-[#0F172A]" : "bg-[#F8FAFC]")}>
           <div className="h-full bg-[#3B82F6]" style={{ width: `${progress}%` }} />
         </div>
       )}
@@ -627,15 +740,18 @@ function MetricCard({ title, value, subtext, icon, trend, progress, description 
   );
 }
 
-function StatBox({ label, value, color }: any) {
+function StatBox({ label, value, color, isDarkMode }: any) {
   return (
-    <div className="bg-[#F8FAFC] border border-border rounded-xl p-4 space-y-1 group hover:border-[#3B82F6]/20 transition-all">
+    <div className={cn(
+      "border rounded-xl p-4 space-y-1 group transition-all duration-300",
+      isDarkMode ? "bg-[#0F172A] border-slate-700/50 hover:border-blue-500/20" : "bg-[#F8FAFC] border-border hover:border-[#3B82F6]/20"
+    )}>
       <p className="text-[9px] font-black text-muted-foreground uppercase tracking-wider">{label}</p>
       <p className={cn(
-        "text-sm font-black",
+        "text-sm font-black transition-colors",
         color === 'green' ? "text-[#10B981]" : 
         color === 'red' ? "text-[#EF4444]" : 
-        color === 'blue' ? "text-[#3B82F6]" : "text-[#0F172A]"
+        color === 'blue' ? "text-blue-400" : (isDarkMode ? "text-white" : "text-[#0F172A]")
       )}>
         {value}
       </p>
@@ -643,32 +759,35 @@ function StatBox({ label, value, color }: any) {
   );
 }
 
-function DirectionCard({ type, trades, pnl, winRate }: any) {
+function DirectionCard({ type, trades, pnl, winRate, isDarkMode }: any) {
   return (
-    <div className="p-4 bg-[#F8FAFC] border border-border rounded-xl space-y-4">
+    <div className={cn(
+      "p-4 border rounded-xl space-y-4 transition-colors duration-300",
+      isDarkMode ? "bg-[#0F172A] border-slate-700/50 hover:border-blue-500/20" : "bg-[#F8FAFC] border-border hover:border-[#3B82F6]/20"
+    )}>
       <div className="flex items-center gap-3">
         <div className={cn(
           "w-8 h-8 rounded-lg flex items-center justify-center",
-          type === 'Long' ? "bg-[#EFF6FF] text-[#3B82F6]" : "bg-[#FFF1F2] text-[#EF4444]"
+          type === 'Long' ? (isDarkMode ? "bg-blue-500/10 text-blue-400" : "bg-[#EFF6FF] text-[#3B82F6]") : "bg-[#FFF1F2] text-[#EF4444]"
         )}>
           {type === 'Long' ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
         </div>
-        <span className="text-sm font-black text-[#0F172A]">{type}</span>
+        <span className={cn("text-sm font-black", isDarkMode ? "text-white" : "text-[#0F172A]")}>{type}</span>
       </div>
       <div className="grid grid-cols-3 gap-4">
         <div className="text-center">
           <p className="text-[9px] font-bold text-muted-foreground uppercase mb-1">TRADES</p>
-          <p className="text-xs font-black text-[#0F172A]">{trades}</p>
+          <p className={cn("text-xs font-black", isDarkMode ? "text-white" : "text-[#0F172A]")}>{trades}</p>
         </div>
         <div className="text-center">
           <p className="text-[9px] font-bold text-muted-foreground uppercase mb-1">P&L</p>
-          <p className={cn("text-xs font-black", pnl >= 0 ? "text-[#3B82F6]" : "text-[#EF4444]")}>
+          <p className={cn("text-xs font-black", pnl >= 0 ? "text-blue-400" : "text-[#EF4444]")}>
             ${pnl.toFixed(2)}
           </p>
         </div>
         <div className="text-center">
           <p className="text-[9px] font-bold text-muted-foreground uppercase mb-1">WIN %</p>
-          <p className="text-xs font-black text-[#0F172A]">{winRate.toFixed(1)}%</p>
+          <p className={cn("text-xs font-black", isDarkMode ? "text-white" : "text-[#0F172A]")}>{winRate.toFixed(1)}%</p>
         </div>
       </div>
     </div>
@@ -686,50 +805,53 @@ function SessionSegment({ label, color, start, end }: any) {
   );
 }
 
-function SessionCard({ name, time, icon, color, pnl, trades, winRate, avgTrade }: any) {
-  const colorClass = color === 'gold' ? 'text-[#F59E0B]' : color === 'blue' ? 'text-[#3B82F6]' : 'text-[#10B981]';
-  const bgColorClass = color === 'gold' ? 'bg-[#FFFBEB]' : color === 'blue' ? 'bg-[#EFF6FF]' : 'bg-[#F0FDF4]';
+function SessionCard({ name, time, icon, color, pnl, trades, winRate, avgTrade, isDarkMode }: any) {
+  const colorClass = color === 'gold' ? 'text-[#F59E0B]' : color === 'blue' ? 'text-blue-400' : 'text-[#10B981]';
+  const bgColorClass = color === 'gold' ? (isDarkMode ? 'bg-amber-500/10' : 'bg-[#FFFBEB]') : color === 'blue' ? (isDarkMode ? 'bg-blue-500/10' : 'bg-[#EFF6FF]') : (isDarkMode ? 'bg-emerald-500/10' : 'bg-[#F0FDF4]');
   
   return (
-    <div className="bg-white border border-[#3B82F6]/20 rounded-2xl p-6 space-y-6 shadow-lg shadow-blue-500/5 group hover:border-[#3B82F6]/30 transition-all">
+    <div className={cn(
+      "rounded-2xl p-6 space-y-6 shadow-lg group transition-all duration-300 border",
+      isDarkMode ? "bg-[#0F172A] border-slate-700/50 hover:border-blue-500/30" : "bg-white border-[#3B82F6]/20 hover:border-[#3B82F6]/30 shadow-blue-500/5"
+    )}>
       <div className="flex items-center gap-3">
-        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", bgColorClass, colorClass)}>
+        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-colors duration-300", bgColorClass, colorClass)}>
           {icon}
         </div>
         <div>
-          <h4 className="text-sm font-black text-[#0F172A]">{name}</h4>
+          <h4 className={cn("text-sm font-black", isDarkMode ? "text-white" : "text-[#0F172A]")}>{name}</h4>
           <p className="text-[10px] text-muted-foreground font-bold">{time}</p>
         </div>
       </div>
       
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <span className={cn("text-lg font-black", pnl >= 0 ? "text-[#3B82F6]" : "text-[#EF4444]")}>
+          <span className={cn("text-lg font-black", pnl >= 0 ? "text-blue-400" : "text-[#EF4444]")}>
             ${pnl.toFixed(2)}
           </span>
-          <div className="h-1.5 w-24 bg-[#F8FAFC] rounded-full overflow-hidden">
-            <div className={cn("h-full", pnl >= 0 ? "bg-[#3B82F6]" : "bg-[#EF4444]")} style={{ width: pnl !== 0 ? '100%' : '0%' }} />
+          <div className={cn("h-1.5 w-24 rounded-full overflow-hidden transition-colors duration-300", isDarkMode ? "bg-[#334155]" : "bg-[#F8FAFC]")}>
+            <div className={cn("h-full transition-all duration-500", pnl >= 0 ? "bg-blue-400" : "bg-[#EF4444]")} style={{ width: pnl !== 0 ? '100%' : '0%' }} />
           </div>
         </div>
         
         <div className="grid grid-cols-2 gap-y-4">
           <div>
             <p className="text-[9px] font-bold text-muted-foreground uppercase mb-1">TRADES</p>
-            <p className="text-xs font-black text-[#0F172A]">{trades}</p>
+            <p className={cn("text-xs font-black", isDarkMode ? "text-white" : "text-[#0F172A]")}>{trades}</p>
           </div>
           <div>
             <p className="text-[9px] font-bold text-muted-foreground uppercase mb-1">WIN RATE</p>
-            <p className="text-xs font-black text-[#0F172A]">{winRate > 0 ? `${winRate.toFixed(1)}%` : '—'}</p>
+            <p className={cn("text-xs font-black", isDarkMode ? "text-white" : "text-[#0F172A]")}>{winRate > 0 ? `${winRate.toFixed(1)}%` : '—'}</p>
           </div>
           <div>
             <p className="text-[9px] font-bold text-muted-foreground uppercase mb-1">AVG TRADE</p>
-            <p className={cn("text-xs font-black", (avgTrade || 0) >= 0 ? "text-[#3B82F6]" : "text-[#EF4444]")}>
+            <p className={cn("text-xs font-black", (avgTrade || 0) >= 0 ? "text-blue-400" : "text-[#EF4444]")}>
               {avgTrade !== undefined ? `$${avgTrade.toFixed(2)}` : '—'}
             </p>
           </div>
           <div>
             <p className="text-[9px] font-bold text-muted-foreground uppercase mb-1">VOLUME</p>
-            <p className="text-xs font-black text-[#0F172A]">{trades > 0 ? '100%' : '0%'}</p>
+            <p className={cn("text-xs font-black", isDarkMode ? "text-white" : "text-[#0F172A]")}>{trades > 0 ? '100%' : '0%'}</p>
           </div>
         </div>
       </div>
@@ -746,35 +868,38 @@ function LegendItem({ color, label }: any) {
   );
 }
 
-function DistributionRow({ label, value, color, isTotal }: any) {
+function DistributionRow({ label, value, color, isTotal, isDarkMode }: any) {
   return (
     <div className={cn("flex items-center justify-between", isTotal && "pt-3 border-t border-border")}>
       <div className="flex items-center gap-2">
         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-        <span className={cn("text-xs font-bold", isTotal ? "text-[#0F172A]" : "text-muted-foreground")}>{label}</span>
+        <span className={cn("text-xs font-bold", isTotal ? (isDarkMode ? "text-white" : "text-[#0F172A]") : "text-muted-foreground")}>{label}</span>
       </div>
-      <span className={cn("text-xs font-black", isTotal ? "text-[#3B82F6]" : "text-[#0F172A]")}>{value}</span>
+      <span className={cn("text-xs font-black", isTotal ? "text-blue-400" : (isDarkMode ? "text-slate-300" : "text-[#0F172A]"))}>{value}</span>
     </div>
   );
 }
 
-function StatSummaryCard({ label, value, subtext }: any) {
+function StatSummaryCard({ label, value, subtext, isDarkMode }: any) {
   return (
-    <div className="bg-[#F8FAFC] border border-border rounded-xl p-6 space-y-1 group hover:border-[#3B82F6]/20 transition-all">
+    <div className={cn(
+      "border rounded-xl p-6 space-y-1 group transition-all duration-300",
+      isDarkMode ? "bg-[#0F172A] border-slate-700 hover:border-blue-500/20" : "bg-[#F8FAFC] border-border hover:border-[#3B82F6]/20"
+    )}>
       <p className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">{label}</p>
-      <p className="text-2xl font-black text-[#3B82F6]">{value}</p>
+      <p className="text-2xl font-black text-blue-400">{value}</p>
       <p className="text-[10px] text-muted-foreground font-bold">{subtext}</p>
     </div>
   );
 }
 
-function DetailedStatRow({ label, value, isBlue, isRed }: any) {
+function DetailedStatRow({ label, value, isBlue, isRed, isDarkMode }: any) {
   return (
-    <div className="flex items-center justify-between py-2.5 border-b border-border/50 last:border-0">
+    <div className={cn("flex items-center justify-between py-2.5 border-b last:border-0 transition-colors duration-300", isDarkMode ? "border-slate-800" : "border-border/50")}>
       <span className="text-xs font-medium text-muted-foreground">{label}</span>
       <span className={cn(
-        "text-xs font-black",
-        isBlue ? "text-[#3B82F6]" : isRed ? "text-[#EF4444]" : "text-[#0F172A]"
+        "text-xs font-black transition-colors",
+        isBlue ? "text-blue-400" : isRed ? "text-[#EF4444]" : (isDarkMode ? "text-slate-200" : "text-[#0F172A]")
       )}>
         {value}
       </span>
