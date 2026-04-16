@@ -88,34 +88,34 @@ export default function MarketView({ onBack }: { onBack: () => void }) {
   return (
     <div className="flex flex-col h-screen w-full bg-[#F8FAFC] text-foreground overflow-hidden relative">
       {/* Header */}
-      <header className="h-[72px] bg-white flex items-center justify-between px-4 lg:px-8 sticky top-0 z-10 border-b border-border/50">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={onBack} className="rounded-full">
+      <header className="min-h-[72px] py-2 bg-white flex items-center justify-between px-4 lg:px-8 sticky top-0 z-10 border-b border-border/50">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <Button variant="ghost" size="icon" onClick={onBack} className="rounded-full h-10 w-10 shrink-0">
             <ArrowLeft size={20} />
           </Button>
-          <div className="flex flex-col">
-            <h1 className="text-xl font-bold tracking-tight text-[#0F172A]">Market Hub</h1>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Real-time Trading Intelligence</p>
+          <div className="flex flex-col overflow-hidden">
+            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-[#0F172A] truncate">Market Hub</h1>
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground uppercase tracking-widest truncate">Real-time Intelligence</p>
           </div>
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <Button 
             variant="outline" 
             size="sm" 
             onClick={loadData} 
             disabled={isRefreshing}
-            className="rounded-xl border-border gap-2 h-10 font-bold text-xs"
+            className="rounded-xl border-border gap-2 h-9 sm:h-10 font-bold text-xs shrink-0"
           >
             <RefreshCw size={14} className={cn(isRefreshing && "animate-spin")} />
-            Refresh
+            <span className="hidden sm:inline">Refresh</span>
           </Button>
         </div>
       </header>
 
       {/* Tabs Navigation */}
       <div className="bg-white px-4 lg:px-8 border-b border-border/50">
-        <div className="flex items-center gap-8 max-w-6xl mx-auto">
+        <div className="flex items-center gap-4 sm:gap-8 max-w-6xl mx-auto overflow-x-auto whitespace-nowrap scrollbar-hide">
           {[
             { id: 'watchlist', label: 'Watchlist', icon: <TrendingUp size={16} /> },
             { id: 'info', label: 'Instruments Info', icon: <Info size={16} /> },

@@ -12,6 +12,7 @@ import {
   PenLine,
   ListTodo,
   LayoutGrid, 
+  Menu,
   Ticket, 
   FileText, 
   LineChart, 
@@ -373,7 +374,7 @@ export default function Dashboard() {
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
-        <div className="py-8 px-4 overflow-hidden">
+        <div className="py-8 px-4 overflow-hidden flex items-center justify-between">
           <div className={cn(
             "flex items-center transition-all duration-300",
             isSidebarCollapsed ? "justify-center" : "justify-start px-2"
@@ -382,6 +383,14 @@ export default function Dashboard() {
               {isSidebarCollapsed ? "TD" : "Trading Diary"}
             </span>
           </div>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="lg:hidden rounded-full h-8 w-8"
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
+            <X size={20} />
+          </Button>
         </div>
 
         {/* Sidebar Toggle Button */}
@@ -595,20 +604,31 @@ export default function Dashboard() {
               }}
             />
             {/* Header */}
-            <header className="h-[72px] bg-white flex items-center justify-between px-4 lg:px-8 z-10">
-              <div 
-                className="flex items-center gap-2 bg-[#F8FAFC] px-4 py-2 rounded-xl border border-border h-10 cursor-pointer hover:bg-muted transition-colors"
-                onClick={iterateTimeFormat}
-                title="Click to cycle time format"
-              >
-                <Clock size={16} className="text-muted-foreground" />
-                <span className="text-sm font-bold text-[#0F172A]">{format(currentTime, timeFormat)}</span>
+            <header className="h-[72px] bg-white flex items-center justify-between px-4 lg:px-8 z-10 border-b border-border/50">
+              <div className="flex items-center gap-4">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="lg:hidden rounded-xl h-10 w-10"
+                  onClick={() => setIsMobileMenuOpen(true)}
+                >
+                  <Menu size={24} />
+                </Button>
+
+                <div 
+                  className="hidden sm:flex items-center gap-2 bg-[#F8FAFC] px-4 py-2 rounded-xl border border-border h-10 cursor-pointer hover:bg-muted transition-colors"
+                  onClick={iterateTimeFormat}
+                  title="Click to cycle time format"
+                >
+                  <Clock size={16} className="text-muted-foreground" />
+                  <span className="text-sm font-bold text-[#0F172A]">{format(currentTime, timeFormat)}</span>
+                </div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <button 
                   onClick={() => setIsDarkMode(!isDarkMode)}
-                  className="p-2.5 bg-[#F8FAFC] border border-border rounded-xl text-[#F59E0B] hover:bg-muted transition-colors"
+                  className="p-2 sm:p-2.5 bg-[#F8FAFC] border border-border rounded-xl text-[#F59E0B] hover:bg-muted transition-colors h-10 w-10 flex items-center justify-center"
                   title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
                 >
                   {isDarkMode ? <Moon size={20} /> : <Sun size={20} />}
@@ -617,16 +637,18 @@ export default function Dashboard() {
                 <Button 
                   onClick={() => setIsQuickTradeOpen(true)}
                   variant="outline"
-                  className="border-[#3B82F6] text-[#3B82F6] hover:bg-[#3B82F6]/10 font-bold rounded-xl px-6 h-10"
+                  className="border-[#3B82F6] text-[#3B82F6] hover:bg-[#3B82F6]/10 font-bold rounded-xl px-3 sm:px-6 h-10 text-xs sm:text-sm"
                 >
-                  Quick Entry
+                  <span className="hidden sm:inline">Quick Entry</span>
+                  <Zap size={16} className="sm:hidden" />
                 </Button>
 
                 <Button 
                   onClick={() => setView('trade-form')}
-                  className="bg-[#3B82F6] hover:bg-[#2563EB] text-white font-bold rounded-xl px-6 h-10 shadow-lg shadow-blue-500/20"
+                  className="bg-[#3B82F6] hover:bg-[#2563EB] text-white font-bold rounded-xl px-3 sm:px-6 h-10 shadow-lg shadow-blue-500/20 text-xs sm:text-sm"
                 >
-                  Add Trade
+                  <span className="hidden sm:inline">Add Trade</span>
+                  <Plus size={16} className="sm:hidden" />
                 </Button>
               </div>
             </header>
@@ -686,7 +708,7 @@ export default function Dashboard() {
                   ))}
                 </div>
               </div>
-              <div className="h-[300px] w-full">
+              <div className="h-[250px] sm:h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={metrics.equityCurve}>
                     <defs>
@@ -1203,18 +1225,18 @@ function TradeLogView({
   return (
     <div className="flex flex-col h-screen w-full bg-background text-foreground overflow-hidden dark">
       {/* Header */}
-      <header className="h-16 bg-card/50 backdrop-blur-md flex items-center justify-between px-6 sticky top-0 z-10">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={onBack} className="rounded-full">
+      <header className="min-h-16 py-3 bg-card/50 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 sticky top-0 z-10 gap-4 border-b border-border">
+        <div className="flex items-center gap-4 w-full sm:w-auto">
+          <Button variant="ghost" size="icon" onClick={onBack} className="rounded-full h-10 w-10 shrink-0">
             <ArrowLeft size={20} />
           </Button>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight">Trade Log</h1>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Journal / Trade Log</p>
+          <div className="overflow-hidden">
+            <h1 className="text-lg sm:text-xl font-bold tracking-tight truncate">Trade Log</h1>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest truncate">Journal / Trade Log</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center bg-muted/50 rounded-lg p-1 border border-border">
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end overflow-x-auto pb-1 sm:pb-0">
+          <div className="flex items-center bg-muted/50 rounded-lg p-1 border border-border shrink-0">
             <button 
               onClick={() => setViewMode('list')}
               className={cn(
@@ -1234,9 +1256,9 @@ function TradeLogView({
               <LayoutGrid size={16} />
             </button>
           </div>
-          <div className="w-px h-6 bg-border mx-1" />
+          <div className="hidden sm:block w-px h-6 bg-border mx-1" />
           <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
-            <SelectTrigger className="w-[120px] h-9 bg-card border-border text-xs">
+            <SelectTrigger className="w-[100px] sm:w-[120px] h-9 bg-card border-border text-xs shrink-0">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
@@ -1245,22 +1267,22 @@ function TradeLogView({
               <SelectItem value="Closed">Closed</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm" onClick={handleExportCSV} className="border-border gap-2">
-            <Download size={14} /> Export
+          <Button variant="outline" size="sm" onClick={handleExportCSV} className="border-border gap-2 h-9 text-xs shrink-0">
+            <Download size={14} /> <span className="hidden sm:inline">Export</span>
           </Button>
         </div>
       </header>
 
       {/* Content */}
-      <main className="flex-1 overflow-auto p-6 custom-scrollbar">
+      <main className="flex-1 overflow-auto p-4 sm:p-6 custom-scrollbar">
         <div className="max-w-7xl mx-auto space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <h3 className="font-bold text-sm">All Trades ({filteredTrades.length})</h3>
-            <div className="relative w-64">
+            <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input 
                 placeholder="Search assets, strategies..." 
-                className="pl-9 h-9 bg-card border-border text-xs"
+                className="pl-9 h-9 bg-card border-border text-xs w-full"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />

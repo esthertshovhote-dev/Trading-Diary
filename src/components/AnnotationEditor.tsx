@@ -228,10 +228,10 @@ export function AnnotationEditor({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[900px] bg-card border-border p-0 overflow-hidden">
-        <DialogHeader className="p-4 border-b border-border flex flex-row items-center justify-between space-y-0">
+      <DialogContent className="max-w-[95vw] sm:max-w-[900px] bg-card border-border p-0 overflow-hidden">
+        <DialogHeader className="p-4 border-b border-border flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
           <DialogTitle className="text-sm font-bold uppercase tracking-wider">Annotate Trade Setup</DialogTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 flex-wrap justify-center">
             <ToolButton 
               icon={<MousePointer2 size={18} />} 
               active={activeTool === 'select'} 
@@ -256,7 +256,7 @@ export function AnnotationEditor({
               onClick={() => setTool('text')} 
               label="Text"
             />
-            <div className="w-px h-6 bg-border mx-2" />
+            <div className="hidden sm:block w-px h-6 bg-border mx-2" />
             <ToolButton 
               icon={<Trash2 size={18} />} 
               onClick={handleDelete} 
@@ -270,13 +270,13 @@ export function AnnotationEditor({
           </div>
         </DialogHeader>
 
-        <div className="flex justify-center bg-black p-4">
+        <div className="flex justify-center bg-black p-2 sm:p-4 overflow-auto max-h-[60vh] sm:max-h-none">
           <canvas ref={canvasRef} className="shadow-2xl border border-white/10" />
         </div>
 
-        <DialogFooter className="p-4 border-t border-border bg-muted/30">
-          <Button variant="ghost" onClick={onClose} className="text-muted-foreground">Cancel</Button>
-          <Button onClick={handleSave} className="bg-bento-accent text-background hover:bg-bento-accent/90">
+        <DialogFooter className="p-4 border-t border-border bg-muted/30 flex flex-col sm:flex-row gap-2">
+          <Button variant="ghost" onClick={onClose} className="text-muted-foreground w-full sm:w-auto">Cancel</Button>
+          <Button onClick={handleSave} className="bg-bento-accent text-background hover:bg-bento-accent/90 w-full sm:w-auto">
             <Save size={18} className="mr-2" /> Save Annotations
           </Button>
         </DialogFooter>

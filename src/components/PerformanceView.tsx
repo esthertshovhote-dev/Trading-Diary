@@ -10,6 +10,7 @@ import {
   Calendar as CalendarIcon,
   ChevronLeft,
   ChevronRight,
+  ArrowLeft,
   Search,
   Filter,
   ArrowUpRight,
@@ -89,29 +90,32 @@ export function PerformanceView({ trades, onBack }: PerformanceViewProps) {
   });
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-8 custom-scrollbar">
+    <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-4 sm:p-8 custom-scrollbar">
       <div className="max-w-[1600px] mx-auto space-y-8">
         
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
           <div className="space-y-1">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] flex items-center justify-center text-[#3B82F6]">
+              <Button variant="ghost" size="icon" onClick={onBack} className="rounded-full sm:hidden">
+                <ArrowLeft size={20} />
+              </Button>
+              <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] flex items-center justify-center text-[#3B82F6] shrink-0">
                 <LineChart size={24} />
               </div>
-              <h1 className="text-2xl font-black text-[#0F172A]">Performance Analytics</h1>
+              <h1 className="text-xl sm:text-2xl font-black text-[#0F172A]">Performance Analytics</h1>
             </div>
-            <p className="text-sm text-muted-foreground font-medium">Analyze your trading patterns and improve your strategy</p>
+            <p className="text-xs sm:text-sm text-muted-foreground font-medium">Analyze your trading patterns and improve your strategy</p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center bg-white p-1 rounded-xl border border-border shadow-sm">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="flex items-center bg-white p-1 rounded-xl border border-border shadow-sm overflow-x-auto max-w-full">
               {['Today', '7 Days', '30 Days', '3 Months', '1 Year', 'All Time'].map((p) => (
                 <button 
                   key={p}
                   onClick={() => setTimePeriod(p)}
                   className={cn(
-                    "px-4 py-1.5 text-[11px] font-bold rounded-lg transition-all",
+                    "px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all whitespace-nowrap",
                     timePeriod === p ? "bg-[#3B82F6] text-white shadow-md" : "text-muted-foreground hover:text-[#0F172A]"
                   )}
                 >
@@ -126,7 +130,7 @@ export function PerformanceView({ trades, onBack }: PerformanceViewProps) {
                   key={f}
                   onClick={() => setFilterBy(f)}
                   className={cn(
-                    "px-4 py-1.5 text-[11px] font-bold rounded-lg transition-all flex items-center gap-2",
+                    "px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all flex items-center gap-2 whitespace-nowrap",
                     filterBy === f ? "bg-[#3B82F6] text-white shadow-md" : "text-muted-foreground hover:text-[#0F172A]"
                   )}
                 >

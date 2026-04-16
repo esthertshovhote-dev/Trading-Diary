@@ -149,24 +149,24 @@ export function TradeForm({ onBack, onSave, initialData }: TradeFormProps) {
   return (
     <div className="flex flex-col h-full bg-[#0A0B0E] text-foreground overflow-y-auto custom-scrollbar dark">
       {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b border-border sticky top-0 bg-[#0A0B0E]/80 backdrop-blur-md z-10">
+      <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border sticky top-0 bg-[#0A0B0E]/80 backdrop-blur-md z-10">
         <button 
           onClick={onBack}
-          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-muted-foreground hover:text-foreground transition-colors shrink-0"
         >
           <ChevronLeft size={18} />
-          Back
+          <span className="hidden sm:inline">Back</span>
         </button>
-        <div className="flex items-center gap-4">
-          <h2 className="text-xl font-bold tracking-tight">
+        <div className="flex items-center gap-2 sm:gap-4 overflow-hidden">
+          <h2 className="text-lg sm:text-xl font-bold tracking-tight truncate">
             {initialData ? 'Edit Trade' : 'New Trade'}
           </h2>
-          <div className="flex items-center gap-1.5 text-bento-green text-xs font-medium bg-bento-green/10 px-2 py-1 rounded-full">
+          <div className="hidden sm:flex items-center gap-1.5 text-bento-green text-xs font-medium bg-bento-green/10 px-2 py-1 rounded-full shrink-0">
             <CheckCircle2 size={12} />
             Saved
           </div>
         </div>
-        <div className="w-16" /> {/* Spacer for symmetry */}
+        <div className="w-10 sm:w-16" /> {/* Spacer for symmetry */}
       </div>
 
       <div className="max-w-4xl mx-auto w-full p-6 space-y-12 pb-24">
