@@ -4,21 +4,40 @@ export interface Trade {
   id: string;
   uid: string;
   asset: string;
-  side: 'Buy' | 'Sell';
+  side: 'Long' | 'Short';
   size: string;
   entryPrice: number;
-  currentPrice: number;
-  pnl: number;
-  pnlPercent: number;
-  sl: number;
-  tp: number;
+  currentPrice?: number;
+  pnl?: number;
+  pnlPercent?: number;
+  sl?: number;
+  tp?: number;
   status: 'Active' | 'Closed';
   strategy?: string;
   setupScore?: number;
   notes?: string;
   timestamp: string;
-  thumbnails?: string[]; // URLs or base64
+  thumbnails?: string[]; // URLs
   annotations?: Record<number, string>; // index -> fabric JSON string
+  account?: string;
+  tags?: string[];
+  rules?: string[];
+  exitPrice?: number;
+  exitSize?: string;
+  commission?: number;
+  exitTimestamp?: string;
+  isCompleted?: boolean;
+  postReflection?: string;
+  pulses?: { id: string; content: string; timestamp: string }[];
+  session?: 'Asian' | 'London' | 'New York';
+  htfBias?: 'Bullish' | 'Bearish' | 'Neutral';
+  confluence?: string[];
+  marketCondition?: 'Trending' | 'Ranging' | 'Volatile';
+  emotions?: { before: string; during: string; after: string };
+  executionRating?: number; // 1-5
+  rMultiple?: number;
+  pips?: number;
+  duration?: string;
 }
 
 export interface MarketAsset {
