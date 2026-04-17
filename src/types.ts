@@ -1,5 +1,11 @@
 import React from 'react';
 
+export interface TradeRule {
+  id: string;
+  text: string;
+  checked: boolean;
+}
+
 export interface Trade {
   id: string;
   uid: string;
@@ -21,7 +27,7 @@ export interface Trade {
   annotations?: Record<number, string>; // index -> fabric JSON string
   account?: string;
   tags?: string[];
-  rules?: string[];
+  rules?: TradeRule[];
   exitPrice?: number;
   exitSize?: string;
   commission?: number;

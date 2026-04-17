@@ -36,6 +36,34 @@
         "annotations": { "type": "object" }
       },
       "required": ["uid", "asset", "side", "entryPrice", "timestamp"]
+    },
+    "SelfReview": {
+      "title": "Self Review",
+      "description": "An advanced self-review note",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "period": { "type": "string", "enum": ["day", "week", "month", "quarter", "year"] },
+        "date": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "period", "date", "content"]
+    },
+    "Strategy": {
+      "title": "Strategy",
+      "description": "A trading strategy definition",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "direction": { "type": "string" },
+        "timeFrame": { "type": "string" },
+        "executionTimeFrame": { "type": "string" },
+        "confluences": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "name"]
     }
   },
   "firestore": {
@@ -46,6 +74,14 @@
     "/trades/{tradeId}": {
       "schema": "Trade",
       "description": "Trading records collection"
+    },
+    "/selfReviews/{reviewId}": {
+      "schema": "SelfReview",
+      "description": "Self-review notes collection"
+    },
+    "/strategies/{strategyId}": {
+      "schema": "Strategy",
+      "description": "Trading strategies collection"
     }
   }
 }

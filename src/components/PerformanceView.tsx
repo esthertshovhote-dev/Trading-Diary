@@ -70,6 +70,83 @@ export function PerformanceView({ trades, onBack, isDarkMode }: PerformanceViewP
   const bestTrade = Math.max(...closedTrades.map(t => t.pnl || 0), 0);
   const worstTrade = Math.min(...closedTrades.map(t => t.pnl || 0), 0);
 
+  // Session Calculations
+  const sessions = ['Asian', 'London', 'New York'] as const;
+  const sessionStats = sessions.reduce((acc, session) => {
+    const sessionTrades = closedTrades.filter(t => t.session === session);
+    const pnl = sessionTrades.reduce((total, t) => total + (t.pnl || 0), 0);
+    const wins = sessionTrades.filter(t => (t.pnl || 0) > 0).length;
+    acc[session] = {
+      pnl,
+      trades: sessionTrades.length,
+      winRate: sessionTrades.length > 0 ? (wins / sessionTrades.length) * 100 : 0,
+      expectancy: sessionTrades.length > 0 ? pnl / sessionTrades.length : 0
+    };
+    return acc;
+  }, {} as Record<string, { pnl: number, trades: number, winRate: number, expectancy: number }>);
+
+  // Top Symbols Calculations
+  const symbolStats = React.useMemo(() => {
+    const stats: Record<string, { pnl: number, trades: number, wins: number }> = {};
+    closedTrades.forEach(t => {
+      if (!stats[t.asset]) {
+        stats[t.asset] = { pnl: 0, trades: 0, wins: 0 };
+      }
+      stats[t.asset].pnl += (t.pnl || 0);
+      stats[t.asset].trades += 1;
+      if ((t.pnl || 0) > 0) stats[t.asset].wins += 1;
+    });
+    return Object.entries(stats)
+      .map(([asset, data]) => ({
+        asset,
+        ...data,
+        winRate: (data.wins / data.trades) * 100
+      }))
+      .sort((a, b) => b.pnl - a.pnl)
+      .slice(0, 5);
+  }, [closedTrades]);
+
+  // Calendar Calculations
+  const [currentMonthDate, setCurrentMonthDate] = React.useState(new Date());
+  
+  const calendarDays = React.useMemo(() => {
+    const start = startOfMonth(currentMonthDate);
+    const end = endOfMonth(currentMonthDate);
+    const days = eachDayOfInterval({ start, end });
+    
+    // Pad start of month
+    const firstDayOfWeek = (start.getDay() + 6) % 7; // Adjust to start from Monday (0: Mon, 6: Sun)
+    const padding = Array.from({ length: firstDayOfWeek }).map((_, i) => subDays(start, firstDayOfWeek - i));
+    
+    return [...padding, ...days];
+  }, [currentMonthDate]);
+
+  const dailyPerformanceMap = React.useMemo(() => {
+    const map: Record<string, { pnl: number, trades: number }> = {};
+    closedTrades.forEach(t => {
+      const dateKey = format(new Date(t.exitTimestamp || t.timestamp), 'yyyy-MM-dd');
+      if (!map[dateKey]) {
+        map[dateKey] = { pnl: 0, trades: 0 };
+      }
+      map[dateKey].pnl += (t.pnl || 0);
+      map[dateKey].trades += 1;
+    });
+    return map;
+  }, [closedTrades]);
+
+  const [selectedDayTrades, setSelectedDayTrades] = React.useState<Trade[]>([]);
+  const [selectedDay, setSelectedDay] = React.useState<Date | null>(null);
+
+  const handleDayClick = (day: Date) => {
+    const dateKey = format(day, 'yyyy-MM-dd');
+    const dayTrades = closedTrades.filter(t => format(new Date(t.exitTimestamp || t.timestamp), 'yyyy-MM-dd') === dateKey);
+    setSelectedDayTrades(dayTrades);
+    setSelectedDay(day);
+  };
+
+  const nextMonth = () => setCurrentMonthDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  const prevMonth = () => setCurrentMonthDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+
   // Equity Curve Data
   const equityCurveData = closedTrades
     .sort((a, b) => new Date(a.exitTimestamp || a.timestamp).getTime() - new Date(b.exitTimestamp || b.timestamp).getTime())
@@ -382,33 +459,33 @@ export function PerformanceView({ trades, onBack, isDarkMode }: PerformanceViewP
             <p className="text-[10px] text-muted-foreground font-medium">Best performing assets</p>
           </div>
           <div className="space-y-2">
-            {Array.from(new Set(closedTrades.map(t => t.asset))).slice(0, 5).map((asset, i) => {
-              const assetTrades = closedTrades.filter(t => t.asset === asset);
-              const pnl = assetTrades.reduce((acc, t) => acc + (t.pnl || 0), 0);
-              const wr = (assetTrades.filter(t => (t.pnl || 0) > 0).length / assetTrades.length) * 100;
-              return (
-                <div key={asset} className={cn(
-                  "flex items-center justify-between p-4 rounded-xl border group hover:border-blue-500/30 transition-all duration-300",
-                  isDarkMode ? "bg-[#0F172A] border-slate-700" : "bg-[#F8FAFC] border-border"
-                )}>
-                  <div className="flex items-center gap-4">
-                    <div className={cn(
-                      "w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black border",
-                      isDarkMode ? "bg-[#334155] text-blue-400 border-slate-600" : "bg-[#EFF6FF] text-[#3B82F6] border-transparent"
-                    )}>
-                      {i + 1}
-                    </div>
-                    <div>
-                      <p className={cn("text-sm font-black", isDarkMode ? "text-white" : "text-[#0F172A]")}>{asset}</p>
-                      <p className="text-[10px] text-muted-foreground font-bold">{assetTrades.length} trades • {wr.toFixed(0)}% win</p>
-                    </div>
+            {symbolStats.length > 0 ? symbolStats.map((stat, i) => (
+              <div key={stat.asset} className={cn(
+                "flex items-center justify-between p-4 rounded-xl border group hover:border-blue-500/30 transition-all duration-300",
+                isDarkMode ? "bg-[#0F172A] border-slate-700" : "bg-[#F8FAFC] border-border"
+              )}>
+                <div className="flex items-center gap-4">
+                  <div className={cn(
+                    "w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black border",
+                    isDarkMode ? "bg-[#334155] text-blue-400 border-slate-600" : "bg-[#EFF6FF] text-[#3B82F6] border-transparent"
+                  )}>
+                    {i + 1}
                   </div>
-                  <span className={cn("text-sm font-black", pnl >= 0 ? "text-blue-400" : "text-[#EF4444]")}>
-                    ${pnl.toFixed(2)}
-                  </span>
+                  <div>
+                    <p className={cn("text-sm font-black", isDarkMode ? "text-white" : "text-[#0F172A]")}>{stat.asset}</p>
+                    <p className="text-[10px] text-muted-foreground font-bold">{stat.trades} trades • {stat.winRate.toFixed(0)}% win</p>
+                  </div>
                 </div>
-              );
-            })}
+                <span className={cn("text-sm font-black", stat.pnl >= 0 ? "text-blue-400" : "text-[#EF4444]")}>
+                  ${stat.pnl.toFixed(2)}
+                </span>
+              </div>
+            )) : (
+              <div className="py-12 flex flex-col items-center justify-center text-center opacity-40">
+                <Globe size={48} className="text-muted-foreground mb-4" />
+                <p className="text-sm font-medium">No assets traded yet</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -447,9 +524,10 @@ export function PerformanceView({ trades, onBack, isDarkMode }: PerformanceViewP
               time="22:00 — 08:00 UTC" 
               icon={<Zap size={16} />} 
               color="gold"
-              pnl={0}
-              trades={0}
-              winRate={0}
+              pnl={sessionStats['Asian']?.pnl || 0}
+              trades={sessionStats['Asian']?.trades || 0}
+              winRate={sessionStats['Asian']?.winRate || 0}
+              avgTrade={sessionStats['Asian']?.expectancy}
               isDarkMode={isDarkMode}
             />
             <SessionCard 
@@ -457,10 +535,10 @@ export function PerformanceView({ trades, onBack, isDarkMode }: PerformanceViewP
               time="08:00 — 13:00 UTC" 
               icon={<Shield size={16} />} 
               color="blue"
-              pnl={totalPnl}
-              trades={closedTrades.length}
-              winRate={winRate}
-              avgTrade={expectancy}
+              pnl={sessionStats['London']?.pnl || 0}
+              trades={sessionStats['London']?.trades || 0}
+              winRate={sessionStats['London']?.winRate || 0}
+              avgTrade={sessionStats['London']?.expectancy}
               isDarkMode={isDarkMode}
             />
             <SessionCard 
@@ -468,9 +546,10 @@ export function PerformanceView({ trades, onBack, isDarkMode }: PerformanceViewP
               time="13:00 — 22:00 UTC" 
               icon={<Globe size={16} />} 
               color="green"
-              pnl={0}
-              trades={0}
-              winRate={0}
+              pnl={sessionStats['New York']?.pnl || 0}
+              trades={sessionStats['New York']?.trades || 0}
+              winRate={sessionStats['New York']?.winRate || 0}
+              avgTrade={sessionStats['New York']?.expectancy}
               isDarkMode={isDarkMode}
             />
           </div>
@@ -494,58 +573,61 @@ export function PerformanceView({ trades, onBack, isDarkMode }: PerformanceViewP
                 "flex items-center p-1 rounded-lg border transition-colors duration-300",
                 isDarkMode ? "bg-[#0F172A] border-slate-700" : "bg-[#F8FAFC] border-border"
               )}>
-                <button className={cn("p-1.5 rounded-md transition-all", isDarkMode ? "hover:bg-[#334155]" : "hover:bg-white")}><ChevronLeft size={14} /></button>
-                <span className={cn("px-4 text-xs font-bold", isDarkMode ? "text-white" : "text-[#0F172A]")}>April 2026</span>
-                <button className={cn("p-1.5 rounded-md transition-all", isDarkMode ? "hover:bg-[#334155]" : "hover:bg-white")}><ChevronRight size={14} /></button>
+                <button onClick={prevMonth} className={cn("p-1.5 rounded-md transition-all", isDarkMode ? "hover:bg-[#334155]" : "hover:bg-white")}><ChevronLeft size={14} /></button>
+                <span className={cn("px-4 text-xs font-bold min-w-[100px] text-center", isDarkMode ? "text-white" : "text-[#0F172A]")}>
+                  {format(currentMonthDate, 'MMMM yyyy')}
+                </span>
+                <button onClick={nextMonth} className={cn("p-1.5 rounded-md transition-all", isDarkMode ? "hover:bg-[#334155]" : "hover:bg-white")}><ChevronRight size={14} /></button>
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
             <div className="space-y-4">
-              <div className="grid grid-cols-8 gap-2">
-                {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN', 'WEEKLY'].map(d => (
+              <div className="grid grid-cols-7 gap-2">
+                {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map(d => (
                   <div key={d} className="text-center text-[10px] font-black text-muted-foreground tracking-widest">{d}</div>
                 ))}
-                {/* Simplified Calendar Grid */}
-                {Array.from({ length: 30 }).map((_, i) => {
-                  const day = i + 1;
-                  const isToday = day === 15;
+                
+                {calendarDays.map((day, i) => {
+                  const dateKey = format(day, 'yyyy-MM-dd');
+                  const stats = dailyPerformanceMap[dateKey];
+                  const isToday = isSameDay(day, new Date());
+                  const isCurrentMonth = day.getMonth() === currentMonthDate.getMonth();
+                  
                   return (
                     <div 
                       key={i} 
+                      onClick={() => handleDayClick(day)}
                       className={cn(
-                        "aspect-square rounded-xl border p-2 flex flex-col justify-between transition-all cursor-pointer hover:border-blue-500/50",
+                        "aspect-square rounded-xl border p-2 flex flex-col justify-between transition-all cursor-pointer group",
+                        !isCurrentMonth && "opacity-20",
                         isToday 
                           ? (isDarkMode ? "bg-blue-500/10 border-blue-500/30" : "bg-[#EFF6FF] border-[#3B82F6]/30") 
-                          : (isDarkMode ? "bg-[#0F172A] border-slate-700" : "bg-[#F8FAFC] border-border")
+                          : stats 
+                            ? (stats.pnl >= 0 
+                                ? (isDarkMode ? "bg-blue-500/5 border-blue-500/20" : "bg-blue-50/50 border-blue-200") 
+                                : (isDarkMode ? "bg-rose-500/5 border-rose-500/20" : "bg-rose-50/50 border-rose-200"))
+                            : (isDarkMode ? "bg-[#0F172A] border-slate-700" : "bg-[#F8FAFC] border-border"),
+                        selectedDay && isSameDay(day, selectedDay) && "ring-2 ring-blue-500 ring-offset-2 ring-offset-[#0F172A]"
                       )}
                     >
-                      <span className="text-[10px] font-bold text-muted-foreground">{day}</span>
-                      {isToday && (
+                      <span className={cn("text-[10px] font-bold", isToday ? "text-blue-400" : "text-muted-foreground")}>
+                        {format(day, 'd')}
+                      </span>
+                      {stats && (
                         <div className="text-center">
-                          <p className="text-[10px] font-black text-blue-400">${totalPnl.toFixed(2)}</p>
-                          <p className="text-[8px] font-bold text-muted-foreground">{closedTrades.length} trade</p>
+                          <p className={cn("text-[10px] font-black", stats.pnl >= 0 ? "text-blue-400" : "text-rose-400")}>
+                            {stats.pnl >= 0 ? '+' : '-'}${Math.abs(stats.pnl).toFixed(0)}
+                          </p>
+                          <p className="text-[8px] font-bold text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                            {stats.trades} {stats.trades === 1 ? 'trade' : 'trades'}
+                          </p>
                         </div>
                       )}
                     </div>
                   );
                 })}
-                {/* Weekly stats column placeholder */}
-                <div className="col-start-8 row-start-2 row-span-5 space-y-2">
-                  {[0, 0, totalPnl, 0, 0].map((val, i) => (
-                    <div key={i} className={cn(
-                      "aspect-square rounded-xl border flex flex-col items-center justify-center text-center p-2 transition-colors duration-300",
-                      isDarkMode ? "bg-blue-500/5 border-blue-500/10" : "bg-[#EFF6FF]/50 border-[#3B82F6]/10"
-                    )}>
-                      <p className="text-[8px] font-black text-muted-foreground uppercase">WEEKLY</p>
-                      <p className={cn("text-[10px] font-black", val >= 0 ? "text-blue-400" : "text-[#EF4444]")}>
-                        {val >= 0 ? '+' : ''}${val.toFixed(0)}
-                      </p>
-                      <p className="text-[7px] font-bold text-muted-foreground">Traded Days {val !== 0 ? 1 : 0}</p>
-                    </div>
-                  ))}
-                </div>
               </div>
               <div className="flex items-center justify-center gap-6 pt-4">
                 <LegendItem color="#3B82F6" label="Profitable Day" />
@@ -565,11 +647,38 @@ export function PerformanceView({ trades, onBack, isDarkMode }: PerformanceViewP
                 )}>
                   <ArrowUpRight size={18} />
                 </div>
-                <h3 className={cn("text-sm font-bold", isDarkMode ? "text-white" : "text-[#0F172A]")}>Day Trades</h3>
+                <h3 className={cn("text-sm font-bold", isDarkMode ? "text-white" : "text-[#0F172A]")}>
+                  {selectedDay ? format(selectedDay, 'MMM dd, yyyy') : 'Day Trades'}
+                </h3>
               </div>
-              <div className="flex-1 flex flex-col items-center justify-center text-center p-4 space-y-4 opacity-40">
-                <CalendarIcon size={48} className="text-muted-foreground" />
-                <p className="text-xs font-medium text-muted-foreground max-w-[160px]">Click on a day with trades to view details</p>
+              
+              <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar pr-2">
+                {selectedDayTrades.length > 0 ? (
+                  selectedDayTrades.map(trade => (
+                    <div key={trade.id} className={cn(
+                      "p-3 rounded-xl border transition-all",
+                      isDarkMode ? "bg-[#1E293B] border-slate-700" : "bg-white border-border"
+                    )}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-black">{trade.asset}</span>
+                        <span className={cn("text-xs font-black", (trade.pnl || 0) >= 0 ? "text-blue-400" : "text-[#EF4444]")}>
+                          ${(trade.pnl || 0).toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-[10px] text-muted-foreground font-bold">
+                        <span>{trade.side} • {trade.size}</span>
+                        <span>{trade.strategy || 'No Strategy'}</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center text-center p-4 space-y-4 opacity-40">
+                    <CalendarIcon size={48} className="text-muted-foreground" />
+                    <p className="text-xs font-medium text-muted-foreground max-w-[160px]">
+                      {selectedDay ? 'No trades on this day' : 'Click on a day with trades to view details'}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -17,7 +17,8 @@ import {
   BookOpen,
   FileText,
   CheckCircle,
-  RefreshCw
+  RefreshCw,
+  Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/components/ui/button';
@@ -46,9 +47,10 @@ interface TradeFormProps {
   onBack: () => void;
   onSave: (trade: Omit<Trade, 'id' | 'uid'>) => void;
   initialData?: Trade;
+  userStrategies?: any[];
 }
 
-export function TradeForm({ onBack, onSave, initialData }: TradeFormProps) {
+export function TradeForm({ onBack, onSave, initialData, userStrategies = [] }: TradeFormProps) {
   const [formData, setFormData] = useState<Omit<Trade, 'id' | 'uid'>>({
     asset: initialData?.asset || 'EURUSD',
     side: initialData?.side || 'Long',
@@ -62,7 +64,11 @@ export function TradeForm({ onBack, onSave, initialData }: TradeFormProps) {
     timestamp: initialData?.timestamp || new Date().toISOString(),
     account: initialData?.account || '',
     tags: initialData?.tags || [],
-    rules: initialData?.rules || [],
+  rules: (initialData?.rules as any[]) || [
+    { id: '1', text: 'HTF Trend Alignment', checked: false },
+    { id: '2', text: 'Key Level Interaction', checked: false },
+    { id: '3', text: 'Volume Confirmation', checked: false }
+  ],
     thumbnails: initialData?.thumbnails || [],
     annotations: initialData?.annotations || {},
     exitPrice: initialData?.exitPrice || 0,
@@ -85,6 +91,7 @@ export function TradeForm({ onBack, onSave, initialData }: TradeFormProps) {
   const [exitDate, setExitDate] = useState<Date>(new Date(formData.exitTimestamp || Date.now()));
   const [exitTime, setExitTime] = useState<string>(format(new Date(formData.exitTimestamp || Date.now()), 'HH:mm'));
   const [tagInput, setTagInput] = useState('');
+  const [ruleInput, setRuleInput] = useState('');
   const [showPrompts, setShowPrompts] = useState(false);
   const [showPostPrompts, setShowPostPrompts] = useState(false);
 
@@ -143,6 +150,30 @@ export function TradeForm({ onBack, onSave, initialData }: TradeFormProps) {
     setFormData(prev => ({
       ...prev,
       tags: prev.tags?.filter(t => t !== tag)
+    }));
+  };
+
+  const addRule = () => {
+    if (ruleInput.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        rules: [...(prev.rules || []), { id: Date.now().toString(), text: ruleInput.trim(), checked: false }]
+      }));
+      setRuleInput('');
+    }
+  };
+
+  const toggleRule = (id: string) => {
+    setFormData(prev => ({
+      ...prev,
+      rules: (prev.rules || []).map(r => r.id === id ? { ...r, checked: !r.checked } : r)
+    }));
+  };
+
+  const removeRule = (id: string) => {
+    setFormData(prev => ({
+      ...prev,
+      rules: (prev.rules || []).filter(r => r.id !== id)
     }));
   };
 
@@ -382,9 +413,17 @@ export function TradeForm({ onBack, onSave, initialData }: TradeFormProps) {
                   </SelectTrigger>
                   <SelectContent className="bg-card border-border">
                     <SelectItem value="None">None</SelectItem>
-                    <SelectItem value="Breakout">Breakout</SelectItem>
-                    <SelectItem value="Mean Reversion">Mean Reversion</SelectItem>
-                    <SelectItem value="Trend Following">Trend Following</SelectItem>
+                    {userStrategies.map(strat => (
+                      <SelectItem key={strat.id} value={strat.name}>{strat.name}</SelectItem>
+                    ))}
+                    {/* Fallback presets if user has none defined */}
+                    {userStrategies.length === 0 && (
+                      <>
+                        <SelectItem value="Breakout">Breakout</SelectItem>
+                        <SelectItem value="Mean Reversion">Mean Reversion</SelectItem>
+                        <SelectItem value="Trend Following">Trend Following</SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -465,21 +504,64 @@ export function TradeForm({ onBack, onSave, initialData }: TradeFormProps) {
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <Label className="text-sm font-bold flex items-center gap-1.5">
-                  Rules Checklist
+                  Pre-Trade Checklist
                   <Info size={14} className="text-muted-foreground" />
                 </Label>
-                <Select>
-                  <SelectTrigger className="bg-card border-border h-12">
-                    <SelectValue placeholder="Rules" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-border">
-                    <SelectItem value="rule1">Rule 1: Trend Confirmed</SelectItem>
-                    <SelectItem value="rule2">Rule 2: Volume Spiked</SelectItem>
-                    <SelectItem value="rule3">Rule 3: RSI Divergence</SelectItem>
-                  </SelectContent>
-                </Select>
+                
+                <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-2">
+                  <AnimatePresence initial={false}>
+                    {formData.rules?.map((rule) => (
+                      <motion.div
+                        key={rule.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 10 }}
+                        className={cn(
+                          "flex items-center justify-between p-3 rounded-xl border group transition-all duration-200",
+                          rule.checked 
+                            ? "bg-bento-green/5 border-bento-green/20" 
+                            : "bg-card border-border hover:border-bento-accent/30"
+                        )}
+                      >
+                        <div className="flex items-center gap-3 flex-1 cursor-pointer" onClick={() => toggleRule(rule.id)}>
+                          <div className={cn(
+                            "w-5 h-5 rounded flex items-center justify-center transition-all",
+                            rule.checked 
+                              ? "bg-bento-green text-background scale-110" 
+                              : "border-2 border-muted-foreground/30"
+                          )}>
+                            {rule.checked && <CheckCircle size={14} strokeWidth={3} />}
+                          </div>
+                          <span className={cn(
+                            "text-sm font-medium transition-all",
+                            rule.checked ? "text-bento-green line-through opacity-70" : "text-foreground"
+                          )}>
+                            {rule.text}
+                          </span>
+                        </div>
+                        <button 
+                          onClick={() => removeRule(rule.id)}
+                          className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-500/10 hover:text-red-500 rounded-lg transition-all"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+
+                <div className="relative">
+                  <Input 
+                    placeholder="Add custom rule..." 
+                    value={ruleInput}
+                    onChange={(e) => setRuleInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && addRule()}
+                    className="bg-card border-border h-12 pl-10 focus-visible:ring-bento-accent/50"
+                  />
+                  <Plus className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                </div>
               </div>
             </div>
           </div>

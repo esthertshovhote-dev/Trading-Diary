@@ -80,6 +80,24 @@ service cloud.firestore {
              (!('status' in data) || (data.status in ['Active', 'Closed']));
     }
 
+    function isValidSelfReview(data) {
+      return data.keys().hasAll(['uid', 'period', 'date', 'content']) &&
+             data.uid is string && data.uid == request.auth.uid &&
+             data.period in ['day', 'week', 'month', 'quarter', 'year'] &&
+             data.date is string &&
+             data.content is string && data.content.size() < 5000;
+    }
+
+    function isValidStrategy(data) {
+      return data.keys().hasAll(['uid', 'name']) &&
+             data.uid is string && data.uid == request.auth.uid &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             (!('direction' in data) || (data.direction is string && data.direction.size() < 50)) &&
+             (!('timeFrame' in data) || (data.timeFrame is string && data.timeFrame.size() < 50)) &&
+             (!('executionTimeFrame' in data) || (data.executionTimeFrame is string && data.executionTimeFrame.size() < 50)) &&
+             (!('confluences' in data) || (data.confluences is list && data.confluences.size() <= 20));
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -96,6 +114,22 @@ service cloud.firestore {
       allow read: if isDocOwner() || isAdmin();
       allow create: if isAuthenticated() && isValidTrade(request.resource.data);
       allow update: if isDocOwner() && isValidTrade(request.resource.data) && 
+                    request.resource.data.uid == resource.data.uid;
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /selfReviews/{reviewId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidSelfReview(request.resource.data);
+      allow update: if isDocOwner() && isValidSelfReview(request.resource.data) && 
+                    request.resource.data.uid == resource.data.uid;
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /strategies/{strategyId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidStrategy(request.resource.data);
+      allow update: if isDocOwner() && isValidStrategy(request.resource.data) && 
                     request.resource.data.uid == resource.data.uid;
       allow delete: if isDocOwner() || isAdmin();
     }
